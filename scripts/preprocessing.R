@@ -3,6 +3,7 @@
 library(curatedTCGAData)
 library(TCGAutils)
 library(dplyr)
+library(caret)
 library(readr)
 
 source(file = 'scripts/helpers.R')
