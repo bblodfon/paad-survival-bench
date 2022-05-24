@@ -111,9 +111,9 @@ print(paste0('#CNA features: ', dim(cna_snp_mat)[2])) # 2831 features
 # save to file
 saveRDS(object = cna_snp_mat, file = 'data/cna_snp_mat.rds')
 
-#'#######################################
-# Preprocess Methylation data matrix ----
-#'#######################################
+#'##################################
+# Preprocess Methylation matrix ----
+#'##################################
 # Beta values between 0 (low levels of methylation) and 1 (high levels)
 methyl_data = cancer_data[,,"PAAD_Methylation-20160128"]
 methyl_mat = t(assay(methyl_data))
