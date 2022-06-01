@@ -1,7 +1,8 @@
 library(mlr3verse)
 library(mlr3proba)
-library(dplyr)
+suppressMessages(library(dplyr))
 library(readr)
+library(combinat)
 
 # Get survival data
 clinical_var_mat = readRDS(file = 'data/clinical_var_mat.rds')
