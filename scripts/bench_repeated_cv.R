@@ -20,6 +20,7 @@ if (FALSE) { # logger doesn't work with parallelization enabled
 }
 
 # Tasks ----
+# first run `scripts/prepare_tasks.R`
 tasks = readRDS(file = 'data/tasks.rds')
 tasks = list(tasks$mRNA, tasks$miRNA) # use only mRNA and miRNA tasks
 
