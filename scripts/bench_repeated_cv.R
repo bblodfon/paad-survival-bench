@@ -43,8 +43,3 @@ set.seed(42)
 
 bm_res = benchmark(design)
 #saveRDS(object = bm_res, file = 'results/bm_res_repeated_cv.rds')
-
-# plot benchmarking results
-#bm_res = readRDS('results/bm_res_repeated_cv.rds')
-autoplot(bm_res)
-ggsave(filename = 'img/4learners_miRNA_mRNA_repeatedCV_cindex.png', width = 7, height = 5, dpi = 300)
