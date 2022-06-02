@@ -39,6 +39,10 @@ glmnet_at = AutoTuner$new(
 # Benchmark (Nested-CV) ----
 design = benchmark_grid(tasks = tasks, glmnet_at, outer_resampling)
 
+# Less logging
+lgr::get_logger("bbotk")$set_threshold("warn")
+lgr::get_logger("mlr3")$set_threshold("warn")
+
 # Runs the outer loop in parallel and the inner loop sequentially
 future::plan(list("multisession", "sequential"))
 #future::plan("multisession")
