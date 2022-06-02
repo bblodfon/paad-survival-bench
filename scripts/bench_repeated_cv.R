@@ -5,6 +5,7 @@
 library(mlr3verse)
 library(mlr3proba)
 library(mlr3extralearners)
+library(tictoc)
 
 # Tasks ----
 # first run `scripts/prepare_tasks.R`
@@ -32,5 +33,8 @@ lgr::get_logger("mlr3")$set_threshold("warn")
 future::plan("multisession")
 set.seed(42)
 
+tic()
 bm_res = benchmark(design, store_models = TRUE, store_backends = FALSE)
+toc()
+
 saveRDS(object = bm_res, file = 'results/bm_res_repeated_cv.rds')
