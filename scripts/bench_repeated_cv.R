@@ -34,7 +34,11 @@ future::plan("multisession")
 set.seed(42)
 
 tic()
-bm_res = benchmark(design, store_models = TRUE, store_backends = FALSE)
+bm_res = benchmark(design, store_models = FALSE, store_backends = FALSE)
 toc()
 
-saveRDS(object = bm_res, file = 'results/bm_res_repeated_cv.rds')
+# Save just the performance scores
+perf_res = bm_res$score() %>%
+  as_tibble() %>%
+  select(task_id, learner_id, surv.cindex)
+saveRDS(object = perf_res, file = 'results/perf_res_repeated_cv.rds')
