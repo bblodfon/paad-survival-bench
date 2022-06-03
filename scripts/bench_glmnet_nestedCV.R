@@ -25,7 +25,7 @@ eval_trm = trm("evals", n_evals = n_evals)
 min_lambda = 0.001
 max_lambda = 10
 
-glmnet_lrn = lrn('surv.glmnet', standardize = FALSE,
+glmnet_lrn = lrn('surv.glmnet', standardize = FALSE, id = 'CoxNet',
   lambda = to_tune(p_dbl(min_lambda, max_lambda, logscale = TRUE)),
   alpha = to_tune(0, 1))
 
@@ -49,7 +49,19 @@ future::plan(list("multisession", "sequential"))
 set.seed(42)
 
 tic()
+# `store_model = TRUE` to get the inner tuning archives!
 bm_res = benchmark(design, store_models = TRUE, store_backends = FALSE)
 toc()
 
-saveRDS(bm_res, file = 'results/bm_res_glmnet_nested_cv.rds')
+# save performance results
+perf_res = bm_res$score() %>%
+  as_tibble() %>%
+  select(task_id, learner_id, surv.cindex)
+perf_res$learner_id = 'CoxNet'
+saveRDS(perf_res, file = 'results/perf_res_glmnet_nestedCV.rds')
+
+# save inner tuning archives
+hpo_res = extract_inner_tuning_archives(bm_res) %>%
+  as_tibble() %>%
+  select(-c(resample_result, resampling_id))
+saveRDS(object = hpo_res, file = 'results/hpo_res_glmnet_nestedCV.rds')
