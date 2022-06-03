@@ -17,7 +17,7 @@ tasks = list(tasks$mRNA, tasks$miRNA) # use only mRNA and miRNA tasks
 glmnet_lrn  = lrn('surv.glmnet', id = 'CoxLasso', standardize = FALSE, lambda = 0.01, alpha = 1)
 xgboost_lrn = lrn('surv.xgboost', id = 'XGBoost Survival Learner')
 rpart_lrn   = lrn('surv.rpart', id = 'Survival Tree')
-ranger_lrn  = lrn('surv.ranger', id = 'Survival Forest')
+ranger_lrn  = lrn('surv.ranger', id = 'Survival Forest', verbose = FALSE)
 
 learners = list(glmnet_lrn, rpart_lrn, ranger_lrn, xgboost_lrn)
 
