@@ -6,6 +6,7 @@ library(mlr3verse)
 library(mlr3proba)
 library(mlr3extralearners)
 library(tictoc)
+suppressMessages(library(dplyr))
 
 # Tasks ----
 # first run `scripts/prepare_tasks.R`
