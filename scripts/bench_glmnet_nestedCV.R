@@ -2,7 +2,6 @@ library(mlr3verse)
 library(mlr3proba)
 library(mlr3extralearners)
 suppressMessages(library(dplyr))
-library(readr)
 library(tictoc)
 
 # Tasks ----
