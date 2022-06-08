@@ -51,7 +51,7 @@ future::plan(list("multisession", "sequential"))
 set.seed(42)
 
 tic()
-# `store_model = TRUE` to get the inner tuning archives!
+# `store_models = TRUE` to get the inner tuning archives!
 bm_res = benchmark(design, store_models = TRUE, store_backends = FALSE)
 toc()
 
