@@ -1,7 +1,7 @@
-#'#################################################
-# Benchmark tuned CoxNet, Survival Tree, Survival #
-# Forests and XGBoost on 3 tasks using nested CV  #
-#'#################################################
+#'############################################################
+# Benchmark tuned CoxNet, Survival Tree and Survival Forests #
+# on 3 tasks (2 single, 1 combined) using nested CV          #
+#'############################################################
 library(mlr3verse)
 library(mlr3proba)
 library(mlr3extralearners)
@@ -11,7 +11,7 @@ library(tictoc)
 # Tasks ----
 # first run `scripts/prepare_tasks.R`
 tasks = readRDS(file = 'data/tasks.rds')
-tasks = list(tasks$mRNA, tasks$CNA, tasks$`mRNA-CNA`) # to include: tasks$`mRNA-Methyl-CNA`
+tasks = list(tasks$mRNA, tasks$CNA, tasks$`mRNA-CNA`)
 
 # Global variables ----
 baseline_estimator = 'nelson' # Nelson-Aalen estimator
