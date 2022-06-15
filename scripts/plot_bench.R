@@ -26,7 +26,7 @@ ggsave(filename = 'img/4learners_miRNA_mRNA_repeatedCV.png', width = 7, height =
 # Is there are a significant difference in the rankings of the learners over all the tasks?
 aggr_res = perf_res %>%
   group_by(task_id, learner_id) %>%
-  summarise(c_index = mean(surv.cindex), .groups = "drop") %>%
+  summarise(c_index = mean(surv.cindex), .groups = 'drop') %>%
   mutate(task_id = factor(task_id), learner_id = factor(learner_id))
 
 ba = BenchmarkAggr$new(aggr_res)
@@ -41,7 +41,7 @@ task_comp = list(c('CNA','mRNA'), c('Methyl','mRNA'), c('miRNA', 'mRNA'))
 
 stat_test = perf_res %>%
   rstatix::wilcox_test(formula = surv.cindex ~ task_id, comparisons = task_comp) %>%
-  rstatix::add_significance("p") %>%
+  rstatix::add_significance('p') %>%
   rstatix::add_y_position()
 
 perf_res %>%
@@ -80,3 +80,124 @@ griddf %>% ggplot(aes(x, y, z = z)) +
   geom_point(data = hp_data, aes(x = alpha, y = lambda), inherit.aes = F, size = 0.01) +
   theme_classic()
 ggsave(filename = 'img/glmnet_hp_plot.png', width = 6, height = 5, dpi = 300)
+
+# glmnet,rpart,ranger Nested-CV + tuning ----
+# see `bench_nestedCV_v2.R`
+perf_res = readRDS(file = 'results/perf_res_nestedCV_v2.rds')
+
+# better learner names
+perf_res$learner_id = gsub(pattern = '\\.tuned', replacement = '', perf_res$learner_id)
+
+perf_res = perf_res %>% mutate(learner_id = case_when(
+  learner_id == 'SurvivalTree' ~ 'Survival Tree',
+  learner_id == 'SurvivalForest' ~ 'Survival Forest',
+  TRUE ~ learner_id
+))
+
+## Performance Boxplot (C-index)
+perf_res %>%
+  mutate(learner_id = factor(learner_id,
+    levels = c('Survival Tree', 'CoxNet', 'Survival Forest'))) %>%
+  ggplot(aes(x = learner_id, y = surv.cindex, fill = learner_id)) +
+  geom_boxplot(show.legend = FALSE) +
+  facet_grid(. ~ task_id) +
+  mlr3viz::theme_mlr3(x.text.angle = 45) + xlab('') + ylab('C-index')
+ggsave(filename = 'img/bench_nestedCV_v2/cindex_boxplot.png', width = 7, height = 5, dpi = 300)
+
+# get the boxplot colors for align color in later plots
+hue_colors = scale_color_hue()$palette(n = 3)
+
+## Stat. significance between learners over all the tasks (C-index)
+aggr_res = perf_res %>%
+  mutate(learner_id = case_when(
+    learner_id == 'Survival Tree' ~ 'Tree',
+    learner_id == 'Survival Forest' ~ 'Forest',
+    TRUE ~ learner_id
+  )) %>%
+  group_by(task_id, learner_id) %>%
+  summarise(c_index = mean(surv.cindex), .groups = 'drop') %>%
+  mutate(task_id = factor(task_id), learner_id = factor(learner_id))
+
+ba = BenchmarkAggr$new(aggr_res)
+ba$friedman_test() # Barely!
+
+ba$friedman_posthoc(meas = 'c_index')
+autoplot(ba, type = 'fn', meas = 'c_index') + theme(aspect.ratio = 0.5)
+ggsave(filename = 'img/bench_nestedCV_v2/cindex_friedman_nemenyi.png', width = 3, height = 3, dpi = 300)
+
+p = autoplot(ba, type = 'cd', meas = 'c_index', minimize = FALSE, style = 2) +
+  theme(panel.background = element_rect(fill = 'white'),
+        plot.background = element_rect(fill = 'white')) +
+  scale_color_manual(values = c('Tree' = hue_colors[1],
+    'Forest' = hue_colors[3], 'CoxNet' = hue_colors[2]))
+p$layers[[6]] = NULL # manually remove the line segment below "Critical Difference"
+p
+ggsave(filename = 'img/bench_nestedCV_v2/cindex_cdplot.png', width = 4, height = 2, dpi = 300)
+
+## Performance Boxplot (Integrated Brier score)
+perf_res %>%
+  mutate(learner_id = factor(learner_id,
+    levels = c('Survival Tree', 'CoxNet', 'Survival Forest'))) %>%
+  ggplot(aes(x = learner_id, y = surv.graf, fill = learner_id)) +
+  geom_boxplot(show.legend = FALSE) +
+  facet_grid(. ~ task_id) +
+  mlr3viz::theme_mlr3(x.text.angle = 45) + xlab('') + ylab('Integrated Brier Score')
+ggsave(filename = 'img/bench_nestedCV_v2/brier_boxplot.png', width = 7, height = 5, dpi = 300)
+
+## Statistical significance (Integrated Brier score)
+aggr_res_brier = perf_res %>%
+  mutate(learner_id = case_when(
+    learner_id == 'Survival Tree' ~ 'Tree',
+    learner_id == 'Survival Forest' ~ 'Forest',
+    TRUE ~ learner_id
+  )) %>%
+  group_by(task_id, learner_id) %>%
+  summarise(int_brier_score = mean(surv.graf), .groups = 'drop') %>%
+  mutate(task_id = factor(task_id), learner_id = factor(learner_id))
+
+ba_brier = BenchmarkAggr$new(aggr_res_brier)
+ba_brier$friedman_test() # Barely!
+ba_brier$friedman_posthoc(meas = 'int_brier_score') # same as C-index results
+
+p = autoplot(ba_brier, type = 'cd', meas = 'int_brier_score', minimize = TRUE, style = 2) +
+  theme(panel.background = element_rect(fill = 'white'),
+    plot.background = element_rect(fill = 'white')) +
+  scale_color_manual(values = c('Tree' = hue_colors[1],
+    'Forest' = hue_colors[3], 'CoxNet' = hue_colors[2]))
+p$layers[[6]] = NULL # remove the line segment below "Critical Difference"
+p
+ggsave(filename = 'img/bench_nestedCV_v2/brier_cdplot.png', width = 4, height = 2, dpi = 300) # identical as C-index
+
+## Performance Boxplot (Integrated Log Loss)
+perf_res %>%
+  mutate(learner_id = factor(learner_id,
+    levels = c('Survival Tree', 'CoxNet', 'Survival Forest'))) %>%
+  ggplot(aes(x = learner_id, y = surv.intlogloss, fill = learner_id)) +
+  geom_boxplot(show.legend = FALSE) +
+  facet_grid(. ~ task_id) +
+  mlr3viz::theme_mlr3(x.text.angle = 45) + xlab('') + ylab('Integrated Log Loss')
+ggsave(filename = 'img/bench_nestedCV_v2/logloss_boxplot.png', width = 7, height = 5, dpi = 300) # qualitative same results as the integrated brier score
+
+## Statistical significance (Integrated Log Loss)
+aggr_res_logloss = perf_res %>%
+  mutate(learner_id = case_when(
+    learner_id == 'Survival Tree' ~ 'Tree',
+    learner_id == 'Survival Forest' ~ 'Forest',
+    TRUE ~ learner_id
+  )) %>%
+  group_by(task_id, learner_id) %>%
+  summarise(int_logloss = mean(surv.intlogloss), .groups = 'drop') %>%
+  mutate(task_id = factor(task_id), learner_id = factor(learner_id))
+
+ba_logloss = BenchmarkAggr$new(aggr_res_logloss)
+ba_logloss$friedman_test() # Barely!
+ba_logloss$friedman_posthoc() # same as C-index and int. brier score results
+
+p = autoplot(ba_logloss, type = 'cd', meas = 'int_logloss', minimize = TRUE, style = 2) +
+  theme(panel.background = element_rect(fill = 'white'),
+    plot.background = element_rect(fill = 'white')) +
+  scale_color_manual(values = c('Tree' = hue_colors[1],
+    'Forest' = hue_colors[3], 'CoxNet' = hue_colors[2]))
+p$layers[[6]] = NULL # remove the line segment below "Critical Difference"
+p
+ggsave(filename = 'img/bench_nestedCV_v2/logloss_cdplot.png', width = 4, height = 2, dpi = 300) # identical as C-index and int. brier score results
