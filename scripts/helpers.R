@@ -1,3 +1,5 @@
+library(purrr)
+
 # remove features that have more than cutoff% NAs
 remove_NAs = function(mat, cutoff = 0.2) {
   percent_NAs = colSums(is.na(mat))/nrow(mat)
@@ -51,4 +53,20 @@ flt_var = function(mat, percentage = 0.5) {
   # subset matrix
   print(paste0('Keeping top ', percentage*100, '% of features with higher variance'))
   mat[,colnames(mat) %in% features_to_keep]
+}
+
+# filter a data.table from `benchmark_grid()` to specific learners (manual version)
+# Better do: grid[mlr3misc::map_chr(grid$learner, `[[`, 'id') %in% 'CoxNet.tuned']
+flt_learners = function(grid, learner_ids) {
+  learner_list = grid$learner
+  rows_to_keep = list()
+  j = 1
+  for (i in 1:length(learner_list)) {
+    learner = learner_list[[i]]
+    if (learner$id %in% learner_ids) {
+      rows_to_keep[[j]] = i
+      j = j + 1
+    }
+  }
+  grid[purrr::flatten_dbl(rows_to_keep)]
 }
