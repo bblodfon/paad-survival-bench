@@ -82,14 +82,6 @@ ranger_at = AutoTuner$new(
   terminator = eval_trm,
   tuner = rand_search_tuner)
 
-# XGBoost learner ----
-# xgboost_lrn = lrn('surv.xgboost')
-# id = 'XGBoostSurvival'
-
-## consult:
-#mlr3tuningspaces::lts('classif.xgboost.default')
-#mlr3tuningspaces::lts('classif.xgboost.rbv2')
-
 # Benchmark (Nested-CV) ----
 learners = list(glmnet_at, rpart_at, ranger_at)
 design = benchmark_grid(tasks, learners, outer_resampling)
