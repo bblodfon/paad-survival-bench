@@ -96,6 +96,7 @@ ranger_grid = grid[mlr3misc::map_chr(grid$learner, `[[`, 'id') == 'SurvivalFores
 
 # CoxNet and Survival Tree use explicit (inner fold/tuning) parallelization
 future::plan(list('sequential', 'multisession'))
+#future::plan(list('sequential', future::tweak('multisession', workers = total_nthreads)))
 
 print('Start: CoxNet')
 tic()
