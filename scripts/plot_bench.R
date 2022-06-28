@@ -9,11 +9,11 @@ suppressMessages(library(rstatix))
 library(ggpubr)
 library(metR)
 
-# 4 untuned learners repeated-CV ----
-# see `scripts/bench_repeated_cv.R`
+# bench_repeated_cv.R ----
+# 4 untuned learners repeated-CV
 perf_res = readRDS(file = 'results/perf_res_repeated_cv.rds')
 
-## Performance Boxplot
+## Performance Boxplot ----
 perf_res %>%
   mutate(learner_id = factor(learner_id,
     levels = c('CoxLasso', 'Survival Tree', 'Survival Forest', 'XGBoost Survival Learner'))) %>%
@@ -32,11 +32,11 @@ aggr_res = perf_res %>%
 ba = BenchmarkAggr$new(aggr_res)
 ba$friedman_test() # No!
 
-# glmnet Nested-CV + tuning ----
-# see `bench_glmnet_nestedCV.R`
+# bench_glmnet_nestedCV.R ----
+# glmnet Nested-CV + tuning
 perf_res = readRDS(file = 'results/perf_res_glmnet_nestedCV.rds')
 
-## Performance Boxplot
+## Performance Boxplot ----
 task_comp = list(c('CNA','mRNA'), c('Methyl','mRNA'), c('miRNA', 'mRNA'))
 
 stat_test = perf_res %>%
@@ -55,7 +55,7 @@ perf_res %>%
   ggpubr::stat_pvalue_manual(stat_test, label = '{p} ({p.signif})')
 ggsave(filename = 'img/glmnet_4tasks_nestedCV.png', width = 7, height = 5, dpi = 300)
 
-## plot (alpha, lambda) hyperparameter plot
+## Hyperparameter plot (a, lambda) ----
 hpo_res = readRDS(file = 'results/hpo_res_glmnet_nestedCV.rds')
 hp_data = hpo_res %>%
   filter(task_id == 'mRNA') %>%
@@ -81,8 +81,8 @@ griddf %>% ggplot(aes(x, y, z = z)) +
   theme_classic()
 ggsave(filename = 'img/glmnet_hp_plot.png', width = 6, height = 5, dpi = 300)
 
-# glmnet,rpart,ranger Nested-CV + tuning ----
-# see `bench_nestedCV_v2.R`
+# bench_nestedCV_v2.R ----
+# glmnet,rpart,ranger Nested-CV + tuning
 perf_res = readRDS(file = 'results/perf_res_nestedCV_v2.rds')
 
 # better learner names
@@ -94,7 +94,7 @@ perf_res = perf_res %>% mutate(learner_id = case_when(
   TRUE ~ learner_id
 ))
 
-## Performance Boxplot (C-index)
+## Performance Boxplot (C-index) ----
 perf_res %>%
   mutate(learner_id = factor(learner_id,
     levels = c('Survival Tree', 'CoxNet', 'Survival Forest'))) %>%
@@ -107,7 +107,7 @@ ggsave(filename = 'img/bench_nestedCV_v2/cindex_boxplot.png', width = 7, height 
 # get the boxplot colors for align color in later plots
 hue_colors = scale_color_hue()$palette(n = 3)
 
-## Stat. significance between learners over all the tasks (C-index)
+## Stat. significance (C-index) ----
 aggr_res = perf_res %>%
   mutate(learner_id = case_when(
     learner_id == 'Survival Tree' ~ 'Tree',
@@ -134,7 +134,7 @@ p$layers[[6]] = NULL # manually remove the line segment below "Critical Differen
 p
 ggsave(filename = 'img/bench_nestedCV_v2/cindex_cdplot.png', width = 4, height = 2, dpi = 300)
 
-## Performance Boxplot (Integrated Brier score)
+## Performance Boxplot (Integrated Brier score) ----
 perf_res %>%
   mutate(learner_id = factor(learner_id,
     levels = c('Survival Tree', 'CoxNet', 'Survival Forest'))) %>%
@@ -144,7 +144,7 @@ perf_res %>%
   mlr3viz::theme_mlr3(x.text.angle = 45) + xlab('') + ylab('Integrated Brier Score')
 ggsave(filename = 'img/bench_nestedCV_v2/brier_boxplot.png', width = 7, height = 5, dpi = 300)
 
-## Statistical significance (Integrated Brier score)
+## Stat. significance (Integrated Brier score) ----
 aggr_res_brier = perf_res %>%
   mutate(learner_id = case_when(
     learner_id == 'Survival Tree' ~ 'Tree',
@@ -168,7 +168,7 @@ p$layers[[6]] = NULL # remove the line segment below "Critical Difference"
 p
 ggsave(filename = 'img/bench_nestedCV_v2/brier_cdplot.png', width = 4, height = 2, dpi = 300) # identical as C-index
 
-## Performance Boxplot (Integrated Log Loss)
+## Performance Boxplot (Integrated Log Loss) ----
 perf_res %>%
   mutate(learner_id = factor(learner_id,
     levels = c('Survival Tree', 'CoxNet', 'Survival Forest'))) %>%
@@ -178,7 +178,7 @@ perf_res %>%
   mlr3viz::theme_mlr3(x.text.angle = 45) + xlab('') + ylab('Integrated Log Loss')
 ggsave(filename = 'img/bench_nestedCV_v2/logloss_boxplot.png', width = 7, height = 5, dpi = 300) # qualitative same results as the integrated brier score
 
-## Statistical significance (Integrated Log Loss)
+## Stat. significance (Integrated Log Loss) ----
 aggr_res_logloss = perf_res %>%
   mutate(learner_id = case_when(
     learner_id == 'Survival Tree' ~ 'Tree',
@@ -201,3 +201,5 @@ p = autoplot(ba_logloss, type = 'cd', meas = 'int_logloss', minimize = TRUE, sty
 p$layers[[6]] = NULL # remove the line segment below "Critical Difference"
 p
 ggsave(filename = 'img/bench_nestedCV_v2/logloss_cdplot.png', width = 4, height = 2, dpi = 300) # identical as C-index and int. brier score results
+
+
