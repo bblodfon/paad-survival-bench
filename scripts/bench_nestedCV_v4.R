@@ -74,6 +74,7 @@ ranger_lrn = lrn('surv.ranger', verbose = FALSE, id = 'SurvivalForest',
   num.trees = to_tune(100, 1500),
   mtry.ratio = to_tune(0.01, 0.1), # e.g. choose between ~100 and 1000 mRNA features
   min.node.size = to_tune(1, 20),
+  # include 'C' splitrule for maybe a bit better performance but much more compute time
   splitrule = to_tune(c('logrank', 'maxstat')),
   num.threads = total_nthreads)
 
