@@ -86,12 +86,10 @@ ggsave(filename = 'img/glmnet_hp_plot.png', width = 6, height = 5, dpi = 300)
 perf_res = readRDS(file = 'results/perf_res_nestedCV_v2.rds')
 
 # better learner names
-perf_res$learner_id = gsub(pattern = '\\.tuned', replacement = '', perf_res$learner_id)
-
 perf_res = perf_res %>% mutate(learner_id = case_when(
-  learner_id == 'SurvivalTree' ~ 'Survival Tree',
-  learner_id == 'SurvivalForest' ~ 'Survival Forest',
-  TRUE ~ learner_id
+  learner_id == 'SurvivalTree.tuned' ~ 'Survival Tree',
+  learner_id == 'SurvivalForest.tuned' ~ 'Survival Forest',
+  learner_id == 'CoxNet.tuned' ~ 'CoxNet'
 ))
 
 ## Performance Boxplot (C-index) ----
@@ -101,7 +99,8 @@ perf_res %>%
   ggplot(aes(x = learner_id, y = surv.cindex, fill = learner_id)) +
   geom_boxplot(show.legend = FALSE) +
   facet_grid(. ~ task_id) +
-  mlr3viz::theme_mlr3(x.text.angle = 45) + xlab('') + ylab('C-index')
+  mlr3viz::theme_mlr3(x.text.angle = 45) + xlab('') + ylab('C-index') +
+  ylim(c(0.3, 0.9))
 ggsave(filename = 'img/bench_nestedCV_v2/cindex_boxplot.png', width = 7, height = 5, dpi = 300)
 
 # get the boxplot colors for align color in later plots
@@ -201,5 +200,3 @@ p = autoplot(ba_logloss, type = 'cd', meas = 'int_logloss', minimize = TRUE, sty
 p$layers[[6]] = NULL # remove the line segment below "Critical Difference"
 p
 ggsave(filename = 'img/bench_nestedCV_v2/logloss_cdplot.png', width = 4, height = 2, dpi = 300) # identical as C-index and int. brier score results
-
-
