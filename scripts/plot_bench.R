@@ -223,6 +223,20 @@ perf_res %>%
   ylim(c(0.3, 0.9))
 ggsave(filename = 'img/bench_nestedCV_v4/cindex_boxplot_4outfolds.png', width = 7, height = 5, dpi = 300)
 
+## Stat. significance ----
+aggr_res = perf_res %>%
+  mutate(learner_id = case_when(
+    learner_id == 'Survival Tree' ~ 'Tree',
+    learner_id == 'Survival Forest' ~ 'Forest',
+    TRUE ~ learner_id
+  )) %>%
+  group_by(task_id, learner_id) %>%
+  summarise(c_index = mean(surv.cindex), .groups = 'drop') %>%
+  mutate(task_id = factor(task_id), learner_id = factor(learner_id))
+
+ba = BenchmarkAggr$new(aggr_res)
+ba$friedman_test() # Not significant!
+
 ## Boxplot (out_folds = 8) ----
 perf_res = readRDS(file = 'results/perf_res_nestedCV_v4_8outfolds.rds')
 
@@ -242,6 +256,20 @@ perf_res %>%
   ylim(c(0.3, 0.9))
 ggsave(filename = 'img/bench_nestedCV_v4/cindex_boxplot_8outfolds.png', width = 7, height = 5, dpi = 300)
 
+## Stat. significance ----
+aggr_res = perf_res %>%
+  mutate(learner_id = case_when(
+    learner_id == 'Survival Tree' ~ 'Tree',
+    learner_id == 'Survival Forest' ~ 'Forest',
+    TRUE ~ learner_id
+  )) %>%
+  group_by(task_id, learner_id) %>%
+  summarise(c_index = mean(surv.cindex), .groups = 'drop') %>%
+  mutate(task_id = factor(task_id), learner_id = factor(learner_id))
+
+ba = BenchmarkAggr$new(aggr_res)
+ba$friedman_test() # Not significant!
+
 ## Boxplot (out_folds = 8, C-index splitrule in RSFs) ----
 perf_res = readRDS(file = 'results/perf_res_nestedCV_v4_8outfolds_rsf_cindex_splitrule.rds')
 
@@ -260,3 +288,17 @@ perf_res %>%
   mlr3viz::theme_mlr3(x.text.angle = 45) + xlab('') + ylab('C-index') +
   ylim(c(0.3, 0.9))
 ggsave(filename = 'img/bench_nestedCV_v4/cindex_boxplot_8outfolds_cindex_splitrule_rsf.png', width = 7, height = 5, dpi = 300)
+
+## Stat. significance ----
+aggr_res = perf_res %>%
+  mutate(learner_id = case_when(
+    learner_id == 'Survival Tree' ~ 'Tree',
+    learner_id == 'Survival Forest' ~ 'Forest',
+    TRUE ~ learner_id
+  )) %>%
+  group_by(task_id, learner_id) %>%
+  summarise(c_index = mean(surv.cindex), .groups = 'drop') %>%
+  mutate(task_id = factor(task_id), learner_id = factor(learner_id))
+
+ba = BenchmarkAggr$new(aggr_res)
+ba$friedman_test() # Not significant!
