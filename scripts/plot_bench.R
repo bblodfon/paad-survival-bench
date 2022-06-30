@@ -237,6 +237,40 @@ aggr_res = perf_res %>%
 ba = BenchmarkAggr$new(aggr_res)
 ba$friedman_test() # Not significant!
 
+
+## Boxplot (out_folds = 4, C-index splitrule in RSFs) ----
+perf_res = readRDS(file = 'results/perf_res_nestedCV_v4_4outfolds_rsf_cindex_splitrule.rds')
+
+perf_res = perf_res %>% mutate(learner_id = case_when(
+  learner_id == 'SurvivalTree.tuned' ~ 'Survival Tree',
+  learner_id == 'SurvivalForest.tuned' ~ 'Survival Forest',
+  learner_id == 'CoxNet.tuned' ~ 'CoxNet'
+))
+
+perf_res %>%
+  mutate(learner_id = factor(learner_id,
+    levels = c('Survival Tree', 'CoxNet', 'Survival Forest'))) %>%
+  ggplot(aes(x = learner_id, y = surv.cindex, fill = learner_id)) +
+  geom_boxplot(show.legend = FALSE) +
+  facet_grid(. ~ task_id) +
+  mlr3viz::theme_mlr3(x.text.angle = 45) + xlab('') + ylab('C-index') +
+  ylim(c(0.3, 0.9))
+ggsave(filename = 'img/bench_nestedCV_v4/cindex_boxplot_4outfolds_cindex_splitrule_rsf.png', width = 7, height = 5, dpi = 300)
+
+## Stat. significance ----
+aggr_res = perf_res %>%
+  mutate(learner_id = case_when(
+    learner_id == 'Survival Tree' ~ 'Tree',
+    learner_id == 'Survival Forest' ~ 'Forest',
+    TRUE ~ learner_id
+  )) %>%
+  group_by(task_id, learner_id) %>%
+  summarise(c_index = mean(surv.cindex), .groups = 'drop') %>%
+  mutate(task_id = factor(task_id), learner_id = factor(learner_id))
+
+ba = BenchmarkAggr$new(aggr_res)
+ba$friedman_test() # Not significant!
+
 ## Boxplot (out_folds = 8) ----
 perf_res = readRDS(file = 'results/perf_res_nestedCV_v4_8outfolds.rds')
 
