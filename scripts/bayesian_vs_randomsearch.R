@@ -7,7 +7,6 @@ library(mlr3proba)
 library(mlr3extralearners)
 library(mlr3mbo)
 library(progressr)
-library(ggplot2)
 library(boot)
 
 res_path = 'results/bayes_vs_randsearch/'
