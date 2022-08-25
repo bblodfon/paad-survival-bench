@@ -16,7 +16,8 @@ data.table::rbindlist(xgboost1_res$xgboost_at1$tuning_result$x_domain)
 xgboost1_res$xgboost_at1$archive$data %>%
   as_tibble() %>%
   select(nrounds, eta, runtime_learners) %>%
-  mutate(eta = exp(eta)) # more eta + larger nrounds => more execution time
+  mutate(eta = exp(eta)) %>%
+  arrange(desc(runtime_learners)) # less eta + larger nrounds => more execution time
 
 ## Train time
 xgboost1_res$xgboost_at1$timings['train']/60 # 48 min
