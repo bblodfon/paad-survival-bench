@@ -27,7 +27,7 @@ ranger_tuning_res$ranger_bayes_at$tuner$surrogate$model
 coxnet_tuning_res$coxnet_bayes_at$tuning_result
 coxnet_tuning_res$coxnet_rand_at$tuning_result
 
-## RSF - C-splirule prevailed, same results
+## RSF - C-splitrule prevailed, same results
 ranger_tuning_res$ranger_bayes_at$tuning_result
 ranger_tuning_res$ranger_rand_at$tuning_result
 
@@ -141,6 +141,7 @@ ranger_ci %>% mutate(name = factor(name, levels = c('RSF-RS', 'RSF-BO'))) %>%
 ggsave(filename = 'img/bayes_vs_randsearch/ranger_bootci.png', width = 5, height = 5, dpi = 450)
 
 # check if C-index on test set is correct
+# check C-indexes on train set
 if (FALSE) {
   library(testthat)
   test_indx = readRDS(file = 'data/test_indx_biostat2.rds')
@@ -148,9 +149,21 @@ if (FALSE) {
   tasks = readRDS(file = 'data/tasks.rds')
   task_mRNA = tasks$mRNA
 
-  expect_equal(coxnet_tuning_res$coxnet_rand_at$predict(task_mRNA, row_ids = test_indx)$score(),
+  expect_equal(coxnet_tuning_res$coxnet_rand_at$
+      predict(task_mRNA, row_ids = test_indx)$score(),
     coxnet_bootci$bootci_coxnet_rand$boot_res$t0)
 
-  expect_equal(ranger_tuning_res$ranger_bayes_at$predict(task_mRNA, row_ids = test_indx)$score(),
+  expect_equal(ranger_tuning_res$ranger_bayes_at$
+      predict(task_mRNA, row_ids = test_indx)$score(),
     ranger_bootci$bootci_ranger_bayes$boot_res$t0)
+
+  # overfitting on train set
+  train_indx = setdiff(seq_len(task_mRNA$nrow), test_indx)
+  intersect(test_indx, train_indx)
+
+  coxnet_tuning_res$coxnet_rand_at$predict(task_mRNA, train_indx)$score()
+  coxnet_tuning_res$coxnet_bayes_at$predict(task_mRNA, train_indx)$score()
+
+  ranger_tuning_res$ranger_rand_at$predict(task_mRNA, train_indx)$score()
+  ranger_tuning_res$ranger_bayes_at$predict(task_mRNA, train_indx)$score()
 }
