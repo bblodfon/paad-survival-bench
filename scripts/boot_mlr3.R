@@ -9,10 +9,10 @@ boot_fun = function(data, index, learner, measure) {
 }
 
 boot_ci = function(data, learner, measure = mlr3::msr('surv.cindex'),
-  num_threads = 1, nrsmps = 1000) {
+  num_threads = 1, nrsmps = 1000, parallel = 'multicore') {
 
   boot_res = boot::boot(data, statistic = boot_fun, R = nrsmps,
-    parallel = 'multicore', ncpus = num_threads, learner = learner, measure = measure)
+    parallel = parallel, ncpus = num_threads, learner = learner, measure = measure)
 
   bootci_res = boot::boot.ci(boot_res, type = c('basic', 'norm', 'perc', 'bca'))
 
