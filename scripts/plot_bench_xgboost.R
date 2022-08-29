@@ -10,14 +10,14 @@ res_path = 'results/xgboost/'
 xgboost1_res = readRDS(file = paste0(res_path, 'xgboost1_res.rds'))
 
 ## Tuning results
-xgboost1_res$xgboost_at1$tuning_result$surv.cindex
+xgboost1_res$xgboost_at1$tuning_instance$result
 data.table::rbindlist(xgboost1_res$xgboost_at1$tuning_result$x_domain)
 
 xgboost1_res$xgboost_at1$archive$data %>%
   as_tibble() %>%
-  select(nrounds, eta, runtime_learners) %>%
+  select(surv.cindex, nrounds, eta, runtime_learners) %>%
   mutate(eta = exp(eta)) %>%
-  arrange(desc(runtime_learners)) # less eta + larger nrounds => more execution time
+  arrange(desc(surv.cindex)) # less eta + larger nrounds => more execution time
 
 ## Train time
 xgboost1_res$xgboost_at1$timings['train']/60 # 48 min
