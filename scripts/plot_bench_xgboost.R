@@ -137,13 +137,27 @@ xgboost2_ci = xgboost2_res$boot_ci2$bootci_res$bca
 xgboost3_ci = xgboost3_res$boot_ci3$bootci_res$bca
 xgboost4_ci = xgboost4_res$boot_ci4$bootci_res$bca
 
+# Calculate C-index on train set
+test_indx = xgboost1_res$test_indx
+tasks = readRDS(file = 'data/tasks.rds')
+task_mRNA = tasks$mRNA
+train_indx = setdiff(seq_len(task_mRNA$nrow), test_indx)
+
 xgboost_ci = tibble::tibble(name =
   c('XGBoost-Cox-3HPs', 'XGBoost-Cox-6HPs', 'XGBoost-AFT-5HPs', 'XGBoost-AFT-8HPs'),
-  # Best C-index on train set after tuning
-  cindex_train = c(xgboost1_res$xgboost_at1$tuning_result$surv.cindex,
+  # Average CV C-index for the hp config that BO choose (mean surrogate, not best C-index)
+  cindex_cv_train = c(
+    xgboost1_res$xgboost_at1$tuning_result$surv.cindex,
     xgboost2_res$xgboost_at2$tuning_result$surv.cindex,
     xgboost3_res$xgboost_at3$tuning_result$surv.cindex,
     xgboost4_res$xgboost_at4$tuning_result$surv.cindex),
+  # C-index on train set (~1, overfit 100%!)
+  cindex_train = c(
+    xgboost1_res$xgboost_at1$predict(task_mRNA, train_indx)$score(),
+    xgboost2_res$xgboost_at2$predict(task_mRNA, train_indx)$score(),
+    xgboost3_res$xgboost_at3$predict(task_mRNA, train_indx)$score(),
+    xgboost4_res$xgboost_at4$predict(task_mRNA, train_indx)$score()
+  ),
   # C-index on test set
   cindex_test = c(xgboost1_res$boot_ci1$boot_res$t0, xgboost2_res$boot_ci2$boot_res$t0,
     xgboost3_res$boot_ci3$boot_res$t0, xgboost4_res$boot_ci4$boot_res$t0),
@@ -159,10 +173,11 @@ xgboost_ci %>%
   ggplot(aes(x = name, y = cindex_test, color = name)) +
   geom_pointrange(aes(ymin = low_ci, ymax = high_ci)) +
   geom_errorbar(aes(ymin = low_ci, ymax = high_ci), width = 0.1) +
+  geom_point(aes(x = name, y = cindex_cv_train, size = 1)) +
   geom_point(aes(x = name, y = cindex_train, size = 1)) +
   geom_hline(yintercept = 0.5, linetype = 'dotted', color = 'red') +
-  theme_bw(base_size = 16) + ylim(0.2, 0.8) +
-  labs(x = '', y = 'C-index', title = 'Bootstrap 95% CIs on test set + best C-index on trained set') +
+  theme_bw(base_size = 16) + ylim(0.2, 1) +
+  labs(x = '', y = 'C-index', title = 'Bootstrap 95% CIs on test set + C-indexes on train set') +
   scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
   theme(legend.position = 'none', title = element_text(size = 12))
 ggsave(filename = 'img/xgboost_bootci.png', width = 7, height = 5, dpi = 450)
