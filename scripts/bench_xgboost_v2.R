@@ -15,7 +15,7 @@ library(mlr3extralearners)
 library(mlr3mbo)
 library(progressr)
 library(tictoc)
-library(dplyr)
+suppressMessages(library(dplyr))
 source('scripts/boot_mlr3.R')
 
 res_path = 'results/xgboost/'
