@@ -49,12 +49,6 @@ num_threads = 50 # implicit parallelization
 tasks = readRDS(file = 'data/tasks.rds')
 task_mRNA = tasks$mRNA
 
-task = as_task_surv(x = survival::veteran, time = 'time', event = 'status')
-poe = po('encode')
-task_mRNA = poe$train(list(task))[[1]] # for naming purposes and testing
-
-# check
-
 # ~70%/30% train/test split
 train_indx = sample(seq_len(task_mRNA$nrow), 100)
 test_indx  = setdiff(seq_len(task_mRNA$nrow), train_indx)
