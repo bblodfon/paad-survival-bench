@@ -161,3 +161,82 @@ saveRDS(object = list(
   objective = 'survival-cox',
   hp_num = 7),
   file = paste0(res_path, 'xgboost_cox.rds'))
+
+## XGBoost AFT ----
+xgboost_at_aft = AutoTuner$new(
+  learner = xgboost_aft,
+  resampling = rsmp_cv,
+  measure = harrell_cindex,
+  search_space = ps_aft,
+  terminator = eval_trm,
+  tuner = bayes_tnr
+)
+
+print('Train Start: XGBoost (survival-aft, 9 HPs)')
+tic()
+xgboost_at_aft$train(task_mRNA, train_indx)
+toc()
+print('Train Finished')
+
+print('Performance on test set of hpc that BO chose')
+xgboost_at_aft$predict(task_mRNA, test_indx)$score(harrell_cindex)
+
+# Get best C-index hpc and train learner with it (different from above)
+best_hpc = xgboost_at_aft$archive$best()$x_domain[[1L]]
+xgboost_aft$param_set$values =
+  mlr3misc::insert_named(xgboost_aft$param_set$values, best_hpc)
+
+xgboost_aft$train(task_mRNA, train_indx)
+
+print('Performance on test set of best hpc')
+xgboost_aft$predict(task_mRNA, test_indx)$score(harrell_cindex)
+
+print('Calculate bootstrap CIs for C-index on test set (best hpc)')
+tic()
+boot_aft = boot_ci(data = task_mRNA$data()[test_indx], nrsmps = 1000,
+  learner = xgboost_aft, num_threads = 1, parallel = 'no')
+toc()
+
+print('Calculate C-indexes for all hpcs (test + train set)')
+# get all hpcs tested by BO
+hpc_list = xgboost_at_aft$archive$data$x_domain
+stopifnot(length(hpc_list) == n_evals)
+
+# empty base xgboost learner
+base_lrn = xgboost_aft$clone(deep = TRUE)
+base_lrn$reset()
+
+res = list()
+for (i in 1:length(hpc_list)) {
+  hpc = hpc_list[[i]]
+  base_lrn$param_set$values =
+    mlr3misc::insert_named(base_lrn$param_set$values, hpc)
+
+  base_lrn$train(task_mRNA, train_indx)
+  res[[i]] = dplyr::tibble(
+    index = i,
+    train_cindex = base_lrn$predict(task_mRNA, train_indx)$score(),
+    test_cindex  = base_lrn$predict(task_mRNA, test_indx) $score()
+  )
+
+  base_lrn$reset()
+}
+
+hpc_res = dplyr::bind_rows(res)
+# add the stored average CV C-indexes on the train data
+hpc_res = hpc_res %>%
+  mutate(traincv_cindex = xgboost_at_aft$archive$data$surv.cindex)
+
+print('Saving results...')
+saveRDS(object = list(
+  train_indx = train_indx,
+  test_indx  = test_indx,
+  #xgboost_at_aft = xgboost_at_aft, # save space
+  xgboost_aft = xgboost_aft, # trained learner with best hpc from BO
+  boot_aft = boot_aft, # bootstrap results of best hpc learner on test set
+  hpc_list = hpc_list,
+  hpc_res  = hpc_res,
+  ps_aft   = ps_aft,
+  objective = 'survival-aft',
+  hp_num = 9),
+  file = paste0(res_path, 'xgboost_aft.rds'))
