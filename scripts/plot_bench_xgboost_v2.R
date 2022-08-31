@@ -32,7 +32,7 @@ res$hpc_res %>% ggplot(aes(x = index)) +
   geom_hline(yintercept = 0.5, linetype = 'dotted', color = 'red') +
   labs(x = 'Number of evaluations/hpcs (BO)', y = 'C-index') +
   theme_bw(base_size = 14) + theme(legend.position = 'top')
-ggsave(filename = 'img/xgboost_perf_rs.png', width = 7, height = 5, dpi = 450)
+ggsave(filename = 'img/xgboost_perf.png', width = 7, height = 5, dpi = 450)
 
 ## Confidence Interval ----
 ## QQ-plots not so normal
