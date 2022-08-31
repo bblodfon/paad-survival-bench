@@ -99,7 +99,7 @@ xgboost_at_cox$train(task_mRNA, train_indx)
 toc()
 print('Train Finished')
 
-print('Performance on test set of hpc that BO choose')
+print('Performance on test set of hpc that BO chose')
 xgboost_at_cox$predict(task_mRNA, test_indx)$score(harrell_cindex)
 
 # Get best C-index hpc and train learner with it (different from above)
