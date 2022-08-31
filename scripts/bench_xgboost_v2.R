@@ -153,7 +153,7 @@ print('Saving results...')
 saveRDS(object = list(
   train_indx = train_indx,
   test_indx  = test_indx,
-  #xgboost_at_cox = xgboost_at_cox, # save space
+  xgboost_at_cox = xgboost_at_cox, # comment to save space
   xgboost_cox = xgboost_cox, # trained learner with best hpc from BO
   boot_cox = boot_cox, # bootstrap results of best hpc learner on test set
   hpc_list = hpc_list,
@@ -232,7 +232,7 @@ print('Saving results...')
 saveRDS(object = list(
   train_indx = train_indx,
   test_indx  = test_indx,
-  #xgboost_at_aft = xgboost_at_aft, # save space
+  xgboost_at_aft = xgboost_at_aft, # comment to save space
   xgboost_aft = xgboost_aft, # trained learner with best hpc from BO
   boot_aft = boot_aft, # bootstrap results of best hpc learner on test set
   hpc_list = hpc_list,
