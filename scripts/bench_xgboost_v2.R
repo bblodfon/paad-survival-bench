@@ -55,9 +55,10 @@ test_indx  = setdiff(seq_len(task_mRNA$nrow), train_indx)
 
 # XGBoost Learners (2) ----
 ## Base learners ----
-xgboost_cox = lrn('surv.xgboost', nthread = num_threads, booster = 'gbtree')
+xgboost_cox = lrn('surv.xgboost', nthread = num_threads, booster = 'gbtree',
+  fallback = lrn('surv.kaplan'))
 xgboost_aft = lrn('surv.xgboost', nthread = num_threads, booster = 'gbtree',
-  objective = 'survival:aft')
+  fallback = lrn('surv.kaplan'), objective = 'survival:aft')
 
 ## Parameter spaces ----
 ps_cox = ps(
