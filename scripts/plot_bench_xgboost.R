@@ -4,6 +4,10 @@ library(mlr3verse)
 library(dplyr)
 library(ggplot2)
 
+if (!dir.exists('img/xgboost/')) {
+  dir.create(res_path)
+}
+
 res_path = 'results/xgboost/'
 
 # XGBoost (survival-cox, 3 HPs) ----
@@ -180,7 +184,7 @@ xgboost_ci %>%
   labs(x = '', y = 'C-index', title = 'Bootstrap 95% CIs on test set + C-indexes on train set') +
   scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
   theme(legend.position = 'none', title = element_text(size = 12))
-ggsave(filename = 'img/xgboost_bootci.png', width = 7, height = 5, dpi = 450)
+ggsave(filename = 'img/xgboost/bootci.png', width = 7, height = 5, dpi = 450)
 
 # Train times vs eta ----
 tbl = tibble(name = c('XGBoost-Cox-3HPs', 'XGBoost-Cox-6HPs',
