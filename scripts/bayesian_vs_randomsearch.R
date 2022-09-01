@@ -27,16 +27,13 @@ lgr::get_logger('bbotk')$set_threshold('warn')
 lgr::get_logger('mlr3')$set_threshold('warn')
 
 # Global variables ----
-nfolds = 5
-rsmp_cv = rsmp('cv', folds = nfolds)
-harrell_cindex = msr('surv.cindex')
+n_folds = 5 # CV folds
 n_evals = 250 # number of hyperparameter configurations to search
-eval_trm = trm('evals', n_evals = n_evals)
-rand_tnr = tnr('random_search', batch_size = 1) # no parallelization
-bayes_tnr = tnr('mbo')
 num_threads = 20 # implicit parallelization for RFs
+harrell_cindex = msr('surv.cindex')
 
 # Bootstrap functions ----
+# Refactor the below into `boot_mlr3.R`
 
 #' `data` is a data.table/data.frame object with the test data
 #' and has to have the same structure (features and target columns)
@@ -74,17 +71,17 @@ coxnet_lrn = lrn('surv.glmnet', id = 'CoxNet',
 
 coxnet_bayes_at = AutoTuner$new(
   learner = coxnet_lrn,
-  resampling = rsmp_cv,
+  resampling = rsmp('cv', folds = n_folds),
   measure = harrell_cindex,
-  terminator = eval_trm,
-  tuner = bayes_tnr)
+  terminator = trm('evals', n_evals = n_evals),
+  tuner = tnr('mbo'))
 
 coxnet_rand_at = AutoTuner$new(
   learner = coxnet_lrn,
-  resampling = rsmp_cv,
+  resampling = rsmp('cv', folds = n_folds),
   measure = harrell_cindex,
-  terminator = eval_trm,
-  tuner = rand_tnr)
+  terminator = trm('evals', n_evals = n_evals),
+  tuner = tnr('random_search')) # no parallelization (batch_size = 1)
 
 ## Survival Forests (4 HPs) ----
 ranger_lrn = lrn('surv.ranger', verbose = FALSE, id = 'SurvivalForest',
@@ -96,17 +93,17 @@ ranger_lrn = lrn('surv.ranger', verbose = FALSE, id = 'SurvivalForest',
 
 ranger_bayes_at = AutoTuner$new(
   learner = ranger_lrn,
-  resampling = rsmp_cv,
+  resampling = rsmp('cv', folds = n_folds),
   measure = harrell_cindex,
-  terminator = eval_trm,
-  tuner = bayes_tnr)
+  terminator = trm('evals', n_evals = n_evals),
+  tuner = tnr('mbo'))
 
 ranger_rand_at = AutoTuner$new(
   learner = ranger_lrn,
-  resampling = rsmp_cv,
+  resampling = rsmp('cv', folds = n_folds),
   measure = harrell_cindex,
-  terminator = eval_trm,
-  tuner = rand_tnr)
+  terminator = trm('evals', n_evals = n_evals),
+  tuner = tnr('random_search')) # no parallelization (batch_size = 1)
 
 # Benchmark ----
 ## CoxNet ----

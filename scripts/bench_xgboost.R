@@ -28,13 +28,10 @@ lgr::get_logger('bbotk')$set_threshold('warn')
 lgr::get_logger('mlr3')$set_threshold('warn')
 
 # Global variables ----
-nfolds = 5
-rsmp_cv = rsmp('cv', folds = nfolds)
-harrell_cindex = msr('surv.cindex')
+n_folds = 5 # CV folds
 n_evals = 250 # number of hyperparameter configurations to search
-eval_trm = trm('evals', n_evals = n_evals)
-bayes_tnr = tnr('mbo')
 num_threads = 50 # implicit parallelization
+harrell_cindex = msr('surv.cindex')
 
 # mRNA Task ----
 # ~10000 features
@@ -55,10 +52,10 @@ learner1 = lrn('surv.xgboost',
 
 xgboost_at1 = AutoTuner$new(
   learner = learner1,
-  resampling = rsmp_cv,
+  resampling = rsmp('cv', folds = n_folds),
   measure = harrell_cindex,
-  terminator = eval_trm,
-  tuner = bayes_tnr
+  terminator = trm('evals', n_evals = n_evals),
+  tuner = tnr('mbo')
 )
 
 print('Train Start: XGBoost (survival-cox, 3 HPs)')
@@ -96,10 +93,10 @@ learner2 = lrn('surv.xgboost',
 
 xgboost_at2 = AutoTuner$new(
   learner = learner2,
-  resampling = rsmp_cv,
+  resampling = rsmp('cv', folds = n_folds),
   measure = harrell_cindex,
-  terminator = eval_trm,
-  tuner = bayes_tnr
+  terminator = trm('evals', n_evals = n_evals),
+  tuner = tnr('mbo')
 )
 
 print('Train Start: XGBoost (survival-cox, 6 HPs)')
@@ -136,10 +133,10 @@ learner3 = lrn('surv.xgboost',
 
 xgboost_at3 = AutoTuner$new(
   learner = learner3,
-  resampling = rsmp_cv,
+  resampling = rsmp('cv', folds = n_folds),
   measure = harrell_cindex,
-  terminator = eval_trm,
-  tuner = bayes_tnr
+  terminator = trm('evals', n_evals = n_evals),
+  tuner = tnr('mbo')
 )
 
 print('Train Start: XGBoost (survival-aft, 5 HPs)')
@@ -179,10 +176,10 @@ learner4 = lrn('surv.xgboost',
 
 xgboost_at4 = AutoTuner$new(
   learner = learner4,
-  resampling = rsmp_cv,
+  resampling = rsmp('cv', folds = n_folds),
   measure = harrell_cindex,
-  terminator = eval_trm,
-  tuner = bayes_tnr
+  terminator = trm('evals', n_evals = n_evals),
+  tuner = tnr('mbo')
 )
 
 print('Train Start: XGBoost (survival-aft, 8 HPs)')
