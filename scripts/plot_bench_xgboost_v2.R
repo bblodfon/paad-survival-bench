@@ -4,7 +4,7 @@ library(mlr3verse)
 library(tidyverse)
 
 if (!dir.exists('img/xgboost/')) {
-  dir.create(res_path)
+  dir.create('img/xgboost/')
 }
 
 # XGBoost Cox (survival-cox, 7 HPs) ----
