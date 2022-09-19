@@ -11,4 +11,4 @@ po_varflt = po('filter', filter = flt('variance'), filter.nfeat = 1000)
 task_mRNA_flt = po_varflt$train(list(task_mRNA))[[1]]
 task_mRNA_flt$ncol
 
-task_mRNA = task_mRNA_flt
+saveRDS(task_mRNA_flt, file = 'data/task_mRNA_flt.rds')
