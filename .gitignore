@@ -6,3 +6,5 @@
 Rplots.pdf
 log/
 /data/tasks.rds
+results/bayes_vs_randsearch/
+results/xgboost/xgboost*
