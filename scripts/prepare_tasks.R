@@ -6,7 +6,8 @@ library(combinat)
 
 # Get survival data
 clinical_var_mat = readRDS(file = 'data/clinical_var_mat.rds')
-surv_tbl = clinical_var_mat %>% as_tibble(rownames = 'patient_id') %>%
+surv_tbl = clinical_var_mat %>%
+  as_tibble(rownames = 'patient_id') %>%
   rename(status = vital_status) %>%
   readr::type_convert() %>%
   select(patient_id, status, starts_with('days_to')) %>%
