@@ -144,7 +144,8 @@ ggsave(filename = 'img/bayes_vs_randsearch/ranger_bootci.png', width = 5, height
 # check C-indexes on train set
 if (FALSE) {
   library(testthat)
-  test_indx = readRDS(file = 'data/test_indx_biostat2.rds')
+  res = readRDS(file = 'results/xgboost/xgboost_cox.rds')
+  test_indx = res$test_indx
 
   tasks = readRDS(file = 'data/tasks.rds')
   task_mRNA = tasks$mRNA
