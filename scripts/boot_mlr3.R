@@ -1,9 +1,10 @@
 # Bootstrap functions to use with an mlr3 test task and get
 # Confidence Intervals for a performance metric (e.g. C-index)
 
-#' `data` is a data.table/data.frame object with the test data
-#' and has to have the same structure (features and target columns)
-#' as the task that was used to train the provided learner
+#' @param `data` data.table/data.frame object with the test data
+#' that has the same structure (features and target columns)
+#' as the task that was used to train the provided `learner``
+#' @param `learner` trained Learner object
 boot_fun = function(data, index, learner, measure) {
   learner$predict_newdata(data[index])$score(measure)
 }
