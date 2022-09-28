@@ -97,8 +97,8 @@ get_cindex_all_hps = function(at, task, train_indx) {
     base_lrn$train(task, train_indx)
     res[[i]] = dplyr::tibble(
       index = i,
-      train_cindex = base_lrn$predict(task_mRNA, train_indx)$score(),
-      test_cindex  = base_lrn$predict(task_mRNA, test_indx) $score()
+      train_cindex = base_lrn$predict(task, train_indx)$score(),
+      test_cindex  = base_lrn$predict(task, test_indx) $score()
     )
 
     base_lrn$reset()
