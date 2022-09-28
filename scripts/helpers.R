@@ -1,4 +1,5 @@
 library(purrr)
+library(dplyr)
 
 # remove features that have more than cutoff% NAs
 remove_NAs = function(mat, cutoff = 0.2) {
@@ -69,4 +70,43 @@ flt_learners = function(grid, learner_ids) {
     }
   }
   grid[purrr::flatten_dbl(rows_to_keep)]
+}
+
+
+#' Calculate C-indexes for all hyperparameter configurations tested in an
+#' AutoTuner for both the train and the test set of the Task used to train
+#' the AutoTuner
+#' @param at AutoTuner object, already trained, with non-NULL `at$archive`
+#' @param task Task used to train and test AutoTuner's learner
+#' @param train_indx row_ids from `task` used for training the AutoTuner `at`
+get_cindex_all_hps = function(at, task, train_indx) {
+  hpc_list = at$archive$data$x_domain
+
+  # empty base learner (delete trained model)
+  base_lrn = at$learner$clone(deep = TRUE)
+  base_lrn$reset()
+
+  # test set
+  test_indx = setdiff(seq_len(task$nrow), train_indx)
+
+  res = list()
+  for (i in 1:length(hpc_list)) {
+    hpc = hpc_list[[i]]
+    base_lrn$param_set$values = mlr3misc::insert_named(base_lrn$param_set$values, hpc)
+
+    base_lrn$train(task, train_indx)
+    res[[i]] = dplyr::tibble(
+      index = i,
+      train_cindex = base_lrn$predict(task_mRNA, train_indx)$score(),
+      test_cindex  = base_lrn$predict(task_mRNA, test_indx) $score()
+    )
+
+    base_lrn$reset()
+  }
+
+  hpc_res = dplyr::bind_rows(res)
+
+  # add the stored average (CV) C-index on the train data
+  hpc_res = hpc_res %>%
+    mutate(traincv_cindex = at$archive$data$surv.cindex)
 }
