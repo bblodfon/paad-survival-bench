@@ -1,5 +1,5 @@
 library(purrr)
-library(dplyr)
+suppressMessages(library(dplyr))
 
 # remove features that have more than cutoff% NAs
 remove_NAs = function(mat, cutoff = 0.2) {
