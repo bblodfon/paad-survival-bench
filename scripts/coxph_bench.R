@@ -128,7 +128,8 @@ cox_res = tibble(boot_rs_harrel_cindex = boot_rs_harrel_cindex,
   rnd_har_cindex = rnd_har_cindex, rnd_uno_cindex = rnd_uno_cindex,
   rnd2_har_cindex = rnd2_har_cindex, rnd2_uno_cindex = rnd2_uno_cindex)
 
-saveRDS(object = list(boot_test = boot_test, cox_res = cox_res),
+saveRDS(object = list(boot_test = boot_test, cox_res = cox_res,
+  train_indx = train_indx, test_indx = test_indx, cox_lrn = cox),
   file = 'results/coxph.rds')
 
 # Boxplot C-index Comparison ----
