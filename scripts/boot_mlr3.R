@@ -3,7 +3,7 @@
 
 #' @param `data` data.table/data.frame object with the test data
 #' that has the same structure (features and target columns)
-#' as the task that was used to train the provided `learner``
+#' as the task that was used to train the provided `learner`
 #' @param `learner` trained Learner object
 boot_fun = function(data, index, learner, measure) {
   learner$predict_newdata(data[index])$score(measure)
