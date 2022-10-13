@@ -11,3 +11,5 @@ The most important scripts/investigations are the following:
     - **XGBoost** survival learner performance on mRNA dataset - [script](https://github.com/bblodfon/paad-survival-bench/blob/main/scripts/bench_xgboost_v2.R)
     - **CoxPH** baseline performance using clinical features and several resampling strategies - [script](https://github.com/bblodfon/paad-survival-bench/blob/main/scripts/coxph_bench.R)
     - **CoxBoost** (mRNA only and mRNA + clinical) vs CoxPH (clinical) - [script](https://github.com/bblodfon/paad-survival-bench/blob/main/scripts/coxboost_bench.R)
+    - **Glmboost** survival learner performance on mRNA dataset - [script](https://github.com/bblodfon/paad-survival-bench/blob/main/scripts/glmboost_bench.R)
+
