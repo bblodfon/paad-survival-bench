@@ -110,3 +110,69 @@ get_cindex_all_hps = function(at, task, train_indx) {
   hpc_res = hpc_res %>%
     mutate(traincv_cindex = at$archive$data$surv.cindex)
 }
+
+#' @param `learner` for the `AutoFSelector`
+#' @param `task` for the training of the `AutoFSelector`
+#' @param `resampling` for the `AutoFSelector`. Default: 5x 5-fold CV
+#' @param `measure` for the `AutoFSelector`. Default: Harrell's C-index
+#' @param `method` which FS wrapper method to use. Either 'rfe' (recursive feature
+#' elimination) or 'ga' (genetic algorithm search). Default: 'rfe'
+#' @param `repeats` how many times should we run the FS method
+#' @param `rfe_n_features` number of features that signals the termination of the RFE. Default: 2
+#' @param `rfe_feature_fraction` % of features to keep in each iteration of the RFE. Default: 0.85
+#' @param `ga_iters` how many feature subsets to search in GA
+#' @param `ga_zeroToOneRatio` control how sparse are the feature subsets in GA
+#' (i.e. less features selected). As a rule of thumb, nfeatures-of-task/zeroToOneRatio
+#' will be approx. equal to the number of features in each subset chosen by GA
+run_wrapper_fs = function(learner, task, resampling =
+    rsmp('repeated_cv', folds = 5, repeats = 5),
+  measure = msr('surv.cindex'), method = 'rfe', repeats = 100,
+  rfe_n_features = 2, rfe_feature_fraction = 0.85,
+  ga_iters = 100, ga_zeroToOneRatio = 125
+) {
+
+  if (!method %in% c('rfe', 'ga')) {
+    stop('Only RFE and GA wrapper methods allowed')
+  }
+
+  if (method == 'rfe') { # Recursive Feature Elimination
+    if (!'importance' %in% learner$properties) {
+      message('Learner ' , learner$id, ' doesn\'t provide importance scores')
+      return()
+    }
+
+    at = mlr3fselect::AutoFSelector$new(
+      learner = learner,
+      resampling = resampling,
+      measure = measure,
+      terminator = trm('none'),
+      fselector = fs('rfe', n_features = rfe_n_features,
+        feature_fraction = rfe_feature_fraction),
+      store_models = TRUE
+    )
+  } else if (method == 'ga') { # Genetic Algorithm Search
+    at = mlr3fselect::AutoFSelector$new(
+      learner = learner,
+      resampling = resampling,
+      measure = measure,
+      terminator = trm('evals', n_evals = ga_iters),
+      fselector = fs('genetic_search', zeroToOneRatio = ga_zeroToOneRatio)
+    )
+  }
+
+  # Run Wrapper Algorithm
+  res = list()
+  for (i in 1:repeats) {
+    message(i, '/', repeats, ': ', method, ', ', learner$id)
+
+    at$train(task)
+
+    sel_features = at$fselect_instance$result_feature_set
+    score_rsmp   = at$archive$best()[[measure$id]]
+
+    res[[i]] = tibble::tibble(method = method, learner_id = learner$id,
+      selected_features = list(sel_features), score_rsmp = score_rsmp)
+  }
+
+  dplyr::bind_rows(res)
+}
