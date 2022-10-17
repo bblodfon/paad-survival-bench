@@ -113,22 +113,23 @@ get_cindex_all_hps = function(at, task, train_indx) {
 
 #' @param `learner` for the `AutoFSelector`
 #' @param `task` for the training of the `AutoFSelector`
-#' @param `resampling` for the `AutoFSelector`. Default: 5x 5-fold CV
+#' @param `resampling` for the `AutoFSelector`. Default: 3x 5-fold CV
 #' @param `measure` for the `AutoFSelector`. Default: Harrell's C-index
 #' @param `method` which FS wrapper method to use. Either 'rfe' (recursive feature
 #' elimination) or 'ga' (genetic algorithm search). Default: 'rfe'
 #' @param `repeats` how many times should we run the FS method
 #' @param `rfe_n_features` number of features that signals the termination of the RFE. Default: 2
 #' @param `rfe_feature_fraction` % of features to keep in each iteration of the RFE. Default: 0.85
-#' @param `ga_iters` how many feature subsets to search in GA
+#' @param `ga_iters` how many feature subsets to search in GA (equal to number of generations)
 #' @param `ga_zeroToOneRatio` control how sparse are the feature subsets in GA
-#' (i.e. less features selected). As a rule of thumb, nfeatures-of-task/zeroToOneRatio
+#' (i.e. less features selected). As a rule of thumb, #n_features/zeroToOneRatio
 #' will be approx. equal to the number of features in each subset chosen by GA
-run_wrapper_fs = function(learner, task, resampling =
-    rsmp('repeated_cv', folds = 5, repeats = 5),
+#' @param `ga_popSize` initial population size (number of feature subsets considered)
+run_wrapper_fs = function(learner, task,
+  resampling = rsmp('repeated_cv', folds = 5, repeats = 3),
   measure = msr('surv.cindex'), method = 'rfe', repeats = 100,
   rfe_n_features = 2, rfe_feature_fraction = 0.85,
-  ga_iters = 100, ga_zeroToOneRatio = 125
+  ga_iters = 100, ga_zeroToOneRatio = 200, ga_popSize = 1000
 ) {
 
   if (!method %in% c('rfe', 'ga')) {
