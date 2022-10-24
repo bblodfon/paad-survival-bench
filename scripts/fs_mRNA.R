@@ -44,8 +44,8 @@ config = list(
 
 # mRNA Task ----
 task_mRNA = readRDS(file = 'data/tasks.rds')$mRNA
-mRNA_indx = readRDS(file = 'data/mRNA_indx.rds') # same train/test split as in other benchmarks
-task = task_mRNA$clone()$filter(mRNA_indx$train_indx) # mRNA task to use for FS
+data_split = readRDS(file = 'data/data_split.rds') # same train/test split as in other benchmarks
+task = task_mRNA$clone()$filter(data_split$train_indx) # mRNA task to use for FS
 
 # Learners ----
 ## RSFs ----
@@ -103,7 +103,7 @@ for (method in config$wrapper_methods) {
       index = index + 1
 
       # save intermediate output
-      saveRDS(res, file = paste0(res_path, '/', method, '_', learner$id, '.rds'))
+      # saveRDS(res, file = paste0(res_path, '/', method, '_', learner$id, '.rds'))
     }
   }
 }
@@ -113,51 +113,3 @@ total_res = dplyr::bind_rows(res_list)
 # save all results + configuration
 saveRDS(object = list(res = total_res, config = config),
         file   = paste0(res_path, '/fs_results.rds'))
-
-if (FALSE) {
-  # Some test runs
-  rsf_maxstat = lrn('surv.ranger', verbose = FALSE, id = 'rsf_maxstat',
-    num.trees = 50,
-    mtry.ratio = 0.01,
-    min.node.size = 3,
-    splitrule = 'maxstat',
-    num.threads = num_threads,
-    importance = 'permutation')
-
-  ## GA-RSF-maxstat
-  res1 = run_wrapper_fs(learner = rsf_maxstat, task = task,
-    method = 'ga', repeats = 2, ga_iters = 5)
-  ## GA-CoxLasso
-  res2 = run_wrapper_fs(learner = coxlasso, task = task,
-    method = 'ga', repeats = 2, ga_iters = 5)
-  res22 = run_wrapper_fs(learner = coxboost, task = task,
-    method = 'ga', repeats = 2, ga_iters = 5)
-
-  ## RFE-CoxLasso
-  res3 = run_wrapper_fs(learner = coxlasso, task = task,
-    method = 'rfe', repeats = 2, rfe_n_features = 2, rfe_feature_fraction = 0.05)
-  ## RFE-RSF-maxstat
-  res4 = run_wrapper_fs(learner = rsf_maxstat, task = task,
-    method = 'rfe', repeats = 2, rfe_n_features = 2, rfe_feature_fraction = 0.05)
-  ## RFE-CoxBoost
-  res5 = run_wrapper_fs(learner = coxboost, task = task,
-    method = 'rfe', repeats = 2, rfe_n_features = 2, rfe_feature_fraction = 0.05)
-
-  # after FS has been done
-  train_task = task_mRNA$clone()$select(res1$sel_features[[2]])$filter(mRNA_indx$train_indx)
-  test_task  = task_mRNA$clone()$select(res1$sel_features[[2]])$filter(mRNA_indx$test_indx)
-
-  ## CoxLasso
-  coxlasso$reset()
-  coxlasso$train(train_task)
-  coxlasso$predict(test_task)$score()
-
-  ## RSF
-  rsf_cindex$reset()
-  rsf_cindex$train(train_task)
-  rsf_cindex$model
-
-  rsf_cindex$predict(test_task)$score()
-  rsf_cindex$predict(test_task)$score(uno_cindex, task = train_task,
-    train_set = 1:train_task$nrow)
-}
