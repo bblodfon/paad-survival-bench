@@ -122,7 +122,7 @@ get_cindex_all_hps = function(at, task, train_indx) {
 #' @param `rfe_feature_fraction` % of features to keep in each iteration of the RFE. Default: 0.85
 #' @param `ga_iters` how many feature subsets to search in GA (equal to number of generations)
 #' @param `ga_zeroToOneRatio` control how sparse are the feature subsets in GA
-#' (i.e. less features selected). As a rule of thumb, #n_features/zeroToOneRatio
+#' (i.e. less features selected). As a rule of thumb, `task$ncol`/`zeroToOneRatio`
 #' will be approx. equal to the number of features in each subset chosen by GA
 #' @param `ga_popSize` initial population size (number of feature subsets considered)
 run_wrapper_fs = function(learner, task,
