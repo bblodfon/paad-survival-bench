@@ -38,7 +38,7 @@ config = list(
   rfe_n_features = 2, # number of features to stop RFE
   rfe_feature_fraction = 0.85, # %features to keep in each iteration of RFE
   ga_iters = 100, # GA iterations
-  ga_zeroToOneRatio = 8, # sparse features subsets in GA (~50 'active' features)
+  ga_zeroToOneRatio = 7, # sparse features subsets in GA (~50 'active' features)
   ga_popSize = 1000 # initial population of feature subsets
 )
 
