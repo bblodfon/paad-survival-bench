@@ -36,13 +36,13 @@ config = list(
   repeats = 100, # how many times to run a wrapper method using a specific learner
   wrapper_methods = c('rfe', 'ga'),
   rfe_n_features = 2, # number of features to stop RFE
-  rfe_feature_fraction = 0.8, # %features to keep in each iteration of RFE
+  rfe_feature_fraction = 0.85, # %features to keep in each iteration of RFE
   ga_iters = 100, # GA iterations
   ga_zeroToOneRatio = 8, # sparse features subsets in GA (~50 'active' features)
   ga_popSize = 1000 # initial population of feature subsets
 )
 
-# CNA Task ----
+# miRNA Task ----
 task_miRNA = readRDS(file = 'data/tasks.rds')$miRNA
 data_split = readRDS(file = 'data/data_split.rds') # same train/test split as in other benchmarks
 task = task_miRNA$clone()$filter(data_split$train_indx) # miRNA task to use for FS
