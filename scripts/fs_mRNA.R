@@ -1,7 +1,7 @@
 #'###################################################
 #' Apply an ensemble Feature Selection (FS) strategy
-#' on the mRNA dataset, using multiple learners and
-#' RFE and GA wrapper-based FS methods
+#' on the mRNA TCGA-PAAD dataset, using multiple learners
+#' and wrapper-based FS methods (RFE, GA)
 #'###################################################
 library(mlr3verse)
 library(mlr3proba)

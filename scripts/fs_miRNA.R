@@ -1,7 +1,7 @@
 #'###################################################
 #' Apply an ensemble Feature Selection (FS) strategy
-#' on the miRNA dataset, using multiple learners and
-#' RFE and GA wrapper-based FS methods
+#' on the miRNA TCGA-PAAD dataset, using multiple learners
+#' and wrapper-based FS methods (RFE, GA)
 #'###################################################
 library(mlr3verse)
 library(mlr3proba)
