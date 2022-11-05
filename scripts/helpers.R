@@ -177,3 +177,25 @@ run_wrapper_fs = function(learner, task,
 
   dplyr::bind_rows(res)
 }
+
+#' `sel_feat_list` is a list containing vectors of features
+#' Returns a `tibble` with the features in descending selection frequency order
+get_consensus_features = function(selfeats_list) {
+  repeats = length(selfeats_list)
+  res = sort(table(unlist(selfeats_list)), decreasing = TRUE)
+  times = as.vector(unname(res))
+  tibble(feat_name = names(res), times = times, freq = times/repeats)
+}
+
+#' plot the result (`freq_tbl`) of `get_consensus_features`
+feat_freq_barplot = function(freq_tbl, top_n = 10, title = '') {
+  freq_tbl %>%
+    slice(1:top_n) %>%
+    mutate(feat_name = forcats::fct_reorder(feat_name, times, .desc = FALSE)) %>%
+    ggplot(aes(x = feat_name, y = freq)) +
+    geom_bar(stat = "identity", fill = '#377EB8', show.legend = FALSE) +
+    ggpubr::theme_classic2(base_size = 14) +
+    labs(x = 'Feature name', y = 'Selection Frequency', title = title) +
+    scale_y_continuous(labels = scales::label_percent()) +
+    coord_flip()
+}
