@@ -557,7 +557,7 @@ ggsave(plot = p, filename = paste0(res_path, '/cons_selfreq.png'),
 # Save FS frequency tables ----
 fs_consensus_res = list(mRNA = mRNA_cons_freq_tbl, miRNA = miRNA_cons_freq_tbl,
   CNA = CNA_cons_freq_tbl, Methyl = Methyl_cons_freq_tbl)
-saveRDS(fs_freq, file = 'results/fs/fs_consensus_res.rds')
+saveRDS(fs_consensus_res, file = 'results/fs/fs_consensus_res.rds')
 
 #' Examples how to get consensus features per data modality
 
