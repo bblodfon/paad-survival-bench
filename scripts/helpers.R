@@ -199,3 +199,25 @@ feat_freq_barplot = function(freq_tbl, top_n = 10, title = '') {
     scale_y_continuous(labels = scales::label_percent()) +
     coord_flip()
 }
+
+#' @param `task_list` named list of mlr3 `Task`s
+#' @return a list of `Task`s with every possible combination of features from `task_list`
+get_task_powerset = function(task_list) {
+  po_featureunion = mlr3pipelines::po('featureunion')
+
+  task_subsets = lapply(1:length(task_list), combinat::combn, x = task_list,
+                        simplify = FALSE) %>% unlist(recursive = FALSE)
+
+  task_powerset = list()
+  for (task_subset in task_subsets) {
+    task = po_featureunion$train(task_subset)[[1L]]
+    task_id = paste0(sapply(task_subset, function(l) l$id), collapse = '-')
+    task$id = task_id
+    task_powerset[[task_id]] = task
+  }
+
+  # excluding the empty subset
+  stopifnot(length(task_powerset) == (2^length(task_list)-1))
+
+  task_powerset
+}
