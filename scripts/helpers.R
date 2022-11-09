@@ -221,3 +221,65 @@ get_task_powerset = function(task_list) {
 
   task_powerset
 }
+
+#' Bootstrap function to use with an mlr3 test task and get
+#' Confidence Intervals for a performance metric (e.g. C-index)
+#' @param task an mlr3 `Task`
+#' @param train_indx row ids of the training set of the given `task`
+#' @param test_indx row ids of the test set of the given `task`
+#' @param learner a mlr3 `Learner`, trained on the given `task` using the `train_indx`
+#' rows
+#' @param measure an mlr3 `Measure` object. Currently supports C-index and Integrated
+#' Brier Score. Default's to Harrell's C-index.
+#' @param nthreads how many threads to use? Passed on to the `boot` function's
+#' `ncpus` argument. Default is to use all available cores via `parallelly::availableCores()`
+#' @param nrsmps The number of bootstrap replicates/resamplings
+#' @param parallel Type of parallel operation to be used in `boot` function
+#' @param include_boot_res (TRUE) The returned list will have the `boot.ci` output
+#' always, but you may want to include the `boot` result as well? It includes all
+#' the test statistics in the `boot_res$t`.
+get_boot_ci = function(task, train_indx, test_indx, learner, measure = mlr3::msr('surv.cindex'),
+  nthreads = parallelly::availableCores(), nrsmps = 1000, parallel = 'multicore',
+  include_boot_res = TRUE) {
+
+  # some checks
+  mlr3::assert_task(task)
+  mlr3::assert_learner(learner)
+  mlr3::assert_measure(measure)
+
+  # get the test dataset
+  data = task$data(rows = test_indx)
+
+  boot_res = boot::boot(
+    data, statistic = boot_fun, R = nrsmps, parallel = parallel, ncpus = nthreads,
+    learner = learner, measure = measure, task = task, train_indx = train_indx
+  )
+
+  bootci_res = boot::boot.ci(boot_res, type = c('basic', 'norm', 'perc', 'bca'))
+
+  if (include_boot_res)
+    return(list(boot_res = boot_res, bootci_res = bootci_res))
+  else
+    return(list(bootci_res = bootci_res))
+}
+
+#' @param `data` data.table/data.frame object with the test data
+#' that has the same structure (features and target columns)
+#' as the `task` that was used to train the provided `learner`
+#' on the `train_indx` rows
+#' @param `learner` trained Learner object
+#' @param `measure` an mlr3 `Measure`
+#' @param task an mlr3 `Task`
+#' @param train_indx row ids of the training set of the given `task`
+boot_fun = function(data, index, learner, measure, task, train_indx) {
+  extra_params = FALSE # do we need {task, train_indx}?
+  if (measure$id == 'surv.cindex' && measure$param_set$values$weight_meth == 'G2')
+    extra_params = TRUE # Uno's C-index
+  if (measure$id == 'surv.graf')
+    extra_params = TRUE # Integrated Brier Score
+
+  if (!extra_params)
+    learner$predict_newdata(data[index])$score(measure)
+  else
+    learner$predict_newdata(data[index])$score(measure, task = task, train_set = train_indx)
+}
