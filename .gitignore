@@ -9,3 +9,4 @@ log/
 results/bayes_vs_randsearch/
 results/xgboost/xgboost*
 scripts/test_fs.R
+scripts/helpers_test.R
