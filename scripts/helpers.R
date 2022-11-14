@@ -129,6 +129,91 @@ get_cindex_all_hps = function(at, task, train_indx) {
     mutate(traincv_cindex = at$archive$data$surv.cindex)
 }
 
+#' Calculate a performance score for all hyperparameter configurations used in
+#' an `AutoTuner`. This function calculates the performance score on both the
+#' train and the test set of the `Task` used to train the `AutoTuner`.
+#' The aim is to check for overfitting in the train set and how the performance
+#' on the test set changes during selection of different hyperparameter configurations.
+#'
+#' @param at AutoTuner object, already trained, with non-NULL `at$archive`
+#' @param task Task used to train and test `AutoTuner`'s learner
+#' @param train_indx row_ids from `task` used for training the AutoTuner `at`
+#' @param test_indx row_ids from `task` not used for training the AutoTuner `at`
+#' @param measure an mlr3 `Measure` object. Used to caulcate the performance of
+#' a particular hpc configuration on the train and test set. Currently it can be
+#' Harrell's C-index, Uno's C-index or the Integrated Brier Score.
+#' @param nthreads for parallelization (Default 1)
+#'
+#' @return a tibble with performance scores
+#'
+#' @note You have to keep track of which type of score was used during the
+#' training of the AutoTuner (`rsmp_score`) and the calculation of performance
+#' on the train and test sets (`train_score`, `test_score`)!
+get_scores_hps = function(at, task, train_indx, test_indx, measure, nthreads = 1) {
+  # some checks
+  mlr3::assert_task(task)
+  mlr3::assert_measure(measure)
+
+  # do we need {task, train_indx} in the `$score()`?
+  use_extra_params = extra_params_required(measure)
+
+  # get hyperparameter config list
+  hpc_list = at$archive$data$x_domain
+
+  # empty base learner (delete trained model)
+  base_lrn = at$learner$clone(deep = TRUE)
+
+  res = list()
+  for (i in 1:length(hpc_list)) {
+    hpc = hpc_list[[i]]
+
+    base_lrn$reset()
+    base_lrn$param_set$values = mlr3misc::insert_named(base_lrn$param_set$values, hpc)
+    base_lrn$train(task, train_indx)
+
+    if (!use_extra_params) {
+      train_score = base_lrn$predict(task, train_indx)$score(measure)
+      test_score  = base_lrn$predict(task, test_indx)$score(measure)
+    } else {
+      train_score = base_lrn$predict(task, train_indx)$
+        score(measure, task = task, train_set = train_indx)
+      test_score  = base_lrn$predict(task, test_indx)$
+        score(measure, task = task, train_set = train_indx)
+    }
+
+    res[[i]] = dplyr::tibble(index = i, train_score = train_score,
+      test_score = test_score)
+  }
+
+  hpc_res = dplyr::bind_rows(res)
+
+  # add the stored resampling score on the train data
+  # This assumes the `measure$id` used when training the AutoTuner starts with 'surv'
+  measure_name = grep(x = colnames(learner_at$archive$data), pattern = '^surv',
+    value = TRUE)
+  hpc_res = hpc_res %>%
+    mutate(rsmp_score = at$archive$data[[measure_name]])
+}
+
+#' Plot the results of `get_scores_hps`
+get_hpc_perf_plot = function(hpc_res, rand_perf_score = 0.5,
+  xlab = 'Number of evaluations/hpcs (BO)', measure_name = 'C-index') {
+  hpc_res %>% ggplot2::ggplot(aes(x = index)) +
+    geom_line(aes(y = train_score, color = 'Train'), linewidth = 0.3) +
+    geom_line(aes(y = rsmp_score, color = 'Train (rsmp)'), linewidth = 0.3) +
+    geom_line(aes(y = test_score, color = 'Test'), linewidth = 0.7) +
+    scale_color_manual(name = '',
+      values = c(
+        # colors from RColorBrewer::brewer.pal(3, 'Set1')
+        'Train' = '#E41A1C',
+        'Train (rsmp)' = '#377EB8',
+        'Test' = '#4DAF4A')
+    ) +
+    geom_hline(yintercept = rand_perf_score, linetype = 'dotted', color = 'red') +
+    labs(x = xlab, y = measure_name) +
+    theme_bw(base_size = 14) + theme(legend.position = 'top')
+}
+
 #' @param `learner` for the `AutoFSelector`
 #' @param `task` for the training of the `AutoFSelector`
 #' @param `resampling` for the `AutoFSelector`. Default: 3x 5-fold CV
