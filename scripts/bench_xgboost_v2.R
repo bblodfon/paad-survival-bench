@@ -72,6 +72,9 @@ ps_cox = ps(
     x$early_stopping_rounds = as.integer(ceiling(0.1 * x$nrounds))
     x
   }
+  # depending on the version of xgboost learner in mlr3extralearners,
+  # you may have to set `early_stopping_set = 'train' or 'test'` for
+  # this parameter space to work
 )
 
 ps_aft = ps_cox$clone(deep = TRUE)
