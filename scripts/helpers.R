@@ -74,6 +74,22 @@ flt_learners = function(grid, learner_ids) {
   grid[purrr::flatten_dbl(rows_to_keep)]
 }
 
+#' Does the measure require the extra parameters `task` and `train_set`?
+#'
+#' @param measure an mlr3 `Measure` object. Currently C-index and Integrated
+#' Brier Score are supported.
+extra_params_required = function(measure) {
+  use_extra_params = FALSE
+  # Uno's C-index
+  if (measure$id == 'surv.cindex' && measure$param_set$values$weight_meth == 'G2')
+    use_extra_params = TRUE
+
+  # Integrated Brier Score
+  if (measure$id == 'surv.graf')
+    use_extra_params = TRUE
+
+  use_extra_params
+}
 
 #' Calculate C-indexes for all hyperparameter configurations tested in an
 #' AutoTuner for both the train and the test set of the Task used to train
@@ -274,13 +290,10 @@ get_boot_ci = function(task, train_indx, test_indx, learner, measure = mlr3::msr
 #' @param task an mlr3 `Task`
 #' @param train_indx row ids of the training set of the given `task`
 boot_fun = function(data, index, learner, measure, task, train_indx) {
-  extra_params = FALSE # do we need {task, train_indx}?
-  if (measure$id == 'surv.cindex' && measure$param_set$values$weight_meth == 'G2')
-    extra_params = TRUE # Uno's C-index
-  if (measure$id == 'surv.graf')
-    extra_params = TRUE # Integrated Brier Score
+  # do we need {task, train_indx} in the `$score()`?
+  use_extra_params = extra_params_required(measure)
 
-  if (!extra_params)
+  if (!use_extra_params)
     learner$predict_newdata(data[index])$score(measure)
   else
     learner$predict_newdata(data[index])$score(measure, task = task, train_set = train_indx)
