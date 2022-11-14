@@ -142,14 +142,13 @@ get_cindex_all_hps = function(at, task, train_indx) {
 #' @param measure an mlr3 `Measure` object. Used to caulcate the performance of
 #' a particular hpc configuration on the train and test set. Currently it can be
 #' Harrell's C-index, Uno's C-index or the Integrated Brier Score.
-#' @param nthreads for parallelization (Default 1)
 #'
 #' @return a tibble with performance scores
 #'
 #' @note You have to keep track of which type of score was used during the
 #' training of the AutoTuner (`rsmp_score`) and the calculation of performance
 #' on the train and test sets (`train_score`, `test_score`)!
-get_scores_hps = function(at, task, train_indx, test_indx, measure, nthreads = 1) {
+get_scores_hps = function(at, task, train_indx, test_indx, measure) {
   # some checks
   mlr3::assert_task(task)
   mlr3::assert_measure(measure)
