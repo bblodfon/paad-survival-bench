@@ -1,3 +1,4 @@
+library(mlr3verse)
 library(purrr)
 suppressMessages(library(dplyr))
 
@@ -282,4 +283,119 @@ boot_fun = function(data, index, learner, measure, task, train_indx) {
     learner$predict_newdata(data[index])$score(measure)
   else
     learner$predict_newdata(data[index])$score(measure, task = task, train_set = train_indx)
+}
+
+#' Get a list of Survival Learners
+#'
+#' @param nthreads for implicit parallelization
+get_surv_lrns = function(nthreads = parallelly::availableCores()) {
+  # CoxPH
+  coxph = lrn('surv.coxph', id = 'CoxPH', fallback = lrn('surv.kaplan'))
+
+  # CoxNet
+  coxnet = lrn('surv.glmnet', id = 'CoxNet', fallback = lrn('surv.kaplan'),
+    standardize = FALSE, maxit = 10^3)
+  coxlasso = lrn('surv.glmnet', id = 'CoxLasso', fallback = lrn('surv.kaplan'),
+    standardize = FALSE, maxit = 10^3)
+
+  # Survival Tree
+  surv_tree = lrn('surv.rpart', id = 'SurvivalTree', fallback = lrn('surv.kaplan'))
+
+  ## Random Survival Forests
+  rsf_cindex  = lrn('surv.ranger', verbose = FALSE, id = 'SurvivalForestCIndex',
+    fallback = lrn('surv.kaplan'),
+    num.threads = nthreads,
+    splitrule = 'C') # C-index
+  rsf_logrank = lrn('surv.ranger', verbose = FALSE, id = 'SurvivalForestLogRank',
+    fallback = lrn('surv.kaplan'),
+    num.threads = nthreads,
+    splitrule = 'logrank')
+  rsf_maxstat = lrn('surv.ranger', verbose = FALSE, id = 'SurvivalForestMaxStat',
+    fallback = lrn('surv.kaplan'),
+    num.threads = nthreads,
+    splitrule = 'maxstat')
+
+  # CoxBoost
+  coxboost = lrn('surv.coxboost', id = 'CoxBoost',
+    fallback = lrn('surv.kaplan'),
+    standardize = FALSE, # data already standardized
+    return.score = FALSE) # don't need this in the output
+
+  # XGBoost
+  xgboost_cox = lrn('surv.xgboost', nthread = nthreads, booster = 'gbtree',
+    fallback = lrn('surv.kaplan'), objective = 'survival:cox')
+  xgboost_aft = lrn('surv.xgboost', nthread = nthreads, booster = 'gbtree',
+    fallback = lrn('surv.kaplan'), objective = 'survival:aft')
+
+  list(coxph = coxph, coxnet = coxnet, coxlasso = coxlasso, surv_tree = surv_tree,
+    rsf_cindex = rsf_cindex, rsf_logrank = rsf_logrank, rsf_maxstat = rsf_maxstat,
+    coxboost = coxboost, xgboost_cox = xgboost_cox, xgboost_aft = xgboost_aft)
+}
+
+#' @return a list with suggested tuning spaces for some survival learners
+get_tuning_spaces = function() {
+  coxnet = paradox::ps(
+    lambda = p_dbl(1e-03, 10, logscale = TRUE),
+    alpha  = p_dbl(0, 1)) # from Ridge to Lasso penalty)
+
+  coxlasso = paradox::ps(
+    lambda = p_dbl(1e-03, 10, logscale = TRUE)
+  )
+
+  surv_tree = paradox::ps(
+    minsplit = p_int(1, 64, logscale = TRUE),
+    cp = p_dbl(1e-04, 1, logscale = TRUE))
+
+  rsf = paradox::ps(
+    num.trees = p_int(100, 1500),
+    mtry.ratio = p_dbl(0.1, 0.9),
+    min.node.size = p_int(1, 20))
+
+  coxboost = paradox::ps(
+    stepno = p_int(50, 500),
+    # leave at default => 9 * sum(status == 1)?
+    penalty = p_int(10, 1000, logscale = TRUE),
+    # leave at default => 1?
+    stepsize.factor = p_dbl(1e-01, 10, logscale = TRUE),
+    # use the penalized scores - `hpscore` is faster to calculate
+    criterion = p_fct(c('pscore', 'hpscore')))
+
+  xgboost_cox = paradox::ps(
+    nrounds = p_int(150, 1500),
+    eta = p_dbl(1e-04, 1, logscale = TRUE),
+    max_depth = p_int(2, 8),
+    min_child_weight = p_dbl(1, 128, logscale = TRUE))
+
+   xgboost_cox2 = paradox::ps(
+     nrounds = p_int(150, 1500),
+     eta = p_dbl(1e-04, 1, logscale = TRUE),
+     max_depth = p_int(2, 8),
+     min_child_weight = p_dbl(1, 128, logscale = TRUE),
+     # more possibility for regularization
+     alpha  = p_dbl(1e-03, 10, logscale = TRUE),
+     lambda = p_dbl(1e-03, 10, logscale = TRUE),
+     gamma  = p_dbl(0, 5),
+     # early stopping => 10% of nrounds
+     .extra_trafo = function(x, param_set) {
+       x$early_stopping_rounds = as.integer(ceiling(0.1 * x$nrounds))
+       x
+     }
+     # depending on the version of xgboost learner in mlr3extralearners,
+     # you may have to set `early_stopping_set = 'train' or 'test'` for
+     # this parameter space to work
+   )
+
+   xgboost_aft = xgboost_cox$clone(deep = TRUE)$add(paradox::ps(
+     aft_loss_distribution = p_fct(c('normal', 'logistic', 'extreme')),
+     aft_loss_distribution_scale = p_dbl(0.5, 2.0)
+   ))
+
+   xgboost_aft2 = xgboost_cox2$clone(deep = TRUE)$add(paradox::ps(
+     aft_loss_distribution = p_fct(c('normal', 'logistic', 'extreme')),
+     aft_loss_distribution_scale = p_dbl(0.5, 2.0)
+   ))
+
+  list(coxnet = coxnet, coxlasso = coxlasso, surv_tree = surv_tree, rsf = rsf,
+    coxboost = coxboost, xgboost_cox = xgboost_cox, xgboost_aft = xgboost_aft,
+    xgboost_cox2 = xgboost_cox2, xgboost_aft2 = xgboost_aft2)
 }
