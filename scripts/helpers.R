@@ -1,5 +1,6 @@
 library(mlr3verse)
 library(purrr)
+library(ggplot2)
 suppressMessages(library(dplyr))
 
 # remove features that have more than cutoff% NAs
@@ -58,7 +59,7 @@ flt_var = function(mat, percentage = 0.5) {
 }
 
 # filter a data.table from `benchmark_grid()` to specific learners (manual version)
-# Better do: grid[mlr3misc::map_chr(grid$learner, `[[`, 'id') %in% 'CoxNet.tuned']
+# Better do: grid[mlr3misc::map_chr(grid$learner, `[[`, 'id') %in% learner$id]
 flt_learners = function(grid, learner_ids) {
   learner_list = grid$learner
   rows_to_keep = list()
@@ -179,8 +180,8 @@ run_wrapper_fs = function(learner, task,
   dplyr::bind_rows(res)
 }
 
-#' `sel_feat_list` is a list containing vectors of features
-#' Returns a `tibble` with the features in descending selection frequency order
+#' @param `sel_feat_list` a list containing vectors of features
+#' @return a `tibble` with the features in descending selection frequency order
 get_consensus_features = function(selfeats_list) {
   repeats = length(selfeats_list)
   res = sort(table(unlist(selfeats_list)), decreasing = TRUE)
@@ -188,7 +189,7 @@ get_consensus_features = function(selfeats_list) {
   tibble(feat_name = names(res), times = times, freq = times/repeats)
 }
 
-#' plot the result (`freq_tbl`) of `get_consensus_features`
+#' plots the result (`freq_tbl`) of `get_consensus_features()`
 feat_freq_barplot = function(freq_tbl, top_n = 10, title = '') {
   freq_tbl %>%
     slice(1:top_n) %>%
@@ -230,8 +231,8 @@ get_task_powerset = function(task_list) {
 #' @param test_indx row ids of the test set of the given `task`
 #' @param learner a mlr3 `Learner`, trained on the given `task` using the `train_indx`
 #' rows
-#' @param measure an mlr3 `Measure` object. Currently supports C-index and Integrated
-#' Brier Score. Default's to Harrell's C-index.
+#' @param measure an mlr3 `Measure` object. Currently C-index and Integrated
+#' Brier Score are supported. Default's to Harrell's C-index.
 #' @param nthreads how many threads to use? Passed on to the `boot` function's
 #' `ncpus` argument. Default is to use all available cores via `parallelly::availableCores()`
 #' @param nrsmps The number of bootstrap replicates/resamplings
@@ -287,7 +288,7 @@ boot_fun = function(data, index, learner, measure, task, train_indx) {
 
 #' Get a list of Survival Learners
 #'
-#' @param nthreads for implicit parallelization
+#' @param nthreads for implicit parallelization (RSFs, XGBoost)
 get_surv_lrns = function(nthreads = parallelly::availableCores()) {
   # CoxPH
   coxph = lrn('surv.coxph', id = 'CoxPH', fallback = lrn('surv.kaplan'))
