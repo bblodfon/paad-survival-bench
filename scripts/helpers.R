@@ -337,12 +337,16 @@ get_task_powerset = function(task_list) {
 #' `ncpus` argument. Default is to use all available cores via `parallelly::availableCores()`
 #' @param nrsmps The number of bootstrap replicates/resamplings
 #' @param parallel Type of parallel operation to be used in `boot` function
-#' @param include_boot_res (TRUE) The returned list will have the `boot.ci` output
-#' always, but you may want to include the `boot` result as well? It includes all
-#' the test statistics in the `boot_res$t`.
+#' @param full_result (FALSE) By default we return a list with only what we deem
+#' necessary, i.e. the confidence intervals of `boot::boot.ci()` function, the
+#' observed score on the test set (`t0`), the scores on the bootstrap resamplings
+#' of the test set (`t`) and if there were any warnings or unstable intervals
+#' calculated.
+#' If `TRUE`, a list is returned, having the outputs of both the `boot::boot()`
+#' and the `boot::boot.ci()` function.
 get_boot_ci = function(task, train_indx, test_indx, learner, measure = mlr3::msr('surv.cindex'),
   nthreads = parallelly::availableCores(), nrsmps = 1000, parallel = 'multicore',
-  include_boot_res = TRUE) {
+  full_result = FALSE) {
 
   # some checks
   mlr3::assert_task(task)
@@ -359,10 +363,23 @@ get_boot_ci = function(task, train_indx, test_indx, learner, measure = mlr3::msr
 
   bootci_res = boot::boot.ci(boot_res, type = c('basic', 'norm', 'perc', 'bca'))
 
-  if (include_boot_res)
+  if (full_result)
     return(list(boot_res = boot_res, bootci_res = bootci_res))
-  else
-    return(list(bootci_res = bootci_res))
+  else {
+    # any warnings/errors? (hacked version, see `boot:::print.bootci`)
+    output = utils::capture.output(bootci_res)
+    warn = grep(pattern = 'Warning', x = output, value = TRUE)
+    unstable = grep(pattern = 'unstable', x = output, value = TRUE)
+
+    return(
+      list(
+        t0 = bootci_res$t0, t = boot_res$t, R = bootci_res$R,
+        normal = bootci_res$normal, basic = bootci_res$basic,
+        percent = bootci_res$percent, bca = bootci_res$bca,
+        warn = warn, unstable = unstable
+      )
+    )
+  }
 }
 
 #' @param `data` data.table/data.frame object with the test data
