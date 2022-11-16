@@ -542,3 +542,104 @@ get_tuning_spaces = function() {
     coxboost = coxboost, xgboost_cox = xgboost_cox, xgboost_aft = xgboost_aft,
     xgboost_cox2 = xgboost_cox2, xgboost_aft2 = xgboost_aft2)
 }
+
+#' Run `AutoTuner` on train set of a given task and get bootstrap estimates of
+#' performance on given test set.
+#'
+#' Tune a `learner` with a given hyperparameter `search_space` on the train set
+#' (`train_indx`) of a task, using the given `resampling` scheme and performance
+#' `measure`. By default the tuner uses Bayesian Optimization and stops after
+#' `nevals` evaluations. The hyperparameter configuration with the best average
+#' performance across the resamplings is chosen and a `trained_learner` using
+#' that configuration is returned.
+#'
+#' With `all_hpcs_perf` enabled (default), you get a `tibble` with the
+#' performance scores (`measure`) of all hyperparameter configurations
+#' tested (`nevals`) on the train set, the test set and the resampling estimate
+#' (e.g. average CV performance).
+#'
+#' With `boot_test` enabled (default), you get the performance estimates
+#' (`measure_test`) on bootstrapped test datasets (1000 by default) using
+#' `nthreads` to speed up computations. If `nthreads` is missing, we use all
+#' available cores.
+#'
+#' @note `measure_test` can be different from `measure` - e.g. the one Harrell's
+#' C-index and the other the Integrated Brier Score. If `measure_test` is not
+#' specified at all, it becomes the same as `measure`.
+#'
+run_at = function(learner, task, train_indx, test_indx, resampling, measure,
+  nevals, search_space, all_hpcs_perf = TRUE, boot_test = TRUE, measure_test,
+  nthreads = nthreads) {
+
+  if (missing(measure_test))
+    measure_test = measure
+
+  if (missing(nthreads))
+    nthreads = parallelly::availableCores()
+
+  # some checks
+  mlr3::assert_task(task)
+  mlr3::assert_learner(learner)
+  mlr3::assert_resampling(resampling)
+  mlr3::assert_measure(measure)
+  mlr3::assert_measure(measure_test)
+
+  # Create AutoTuner
+  at = mlr3tuning::AutoTuner$new(
+    learner = learner, # initial object isn't changed during training
+    resampling = resampling, # initial object isn't changed during training
+    measure = measure,
+    search_space = search_space,
+    terminator = trm('evals', n_evals = nevals),
+    tuner = tnr('mbo') # careful, need to define it here
+  )
+
+  # Train AutoTuner
+  message('Train start: (', learner$id, ', ', task$id, ')')
+  at$train(task, train_indx)
+  message('Train finished: (', learner$id, ', ', task$id, ')')
+
+  # Create trained learner using the best hyperparameter config (hpc) from BO
+  # Surrogate doesn't assign the best hpc by default, see
+  # https://github.com/mlr-org/mlr3mbo/issues/84#issuecomment-1230278238
+  best_hpc = at$archive$best()$x_domain[[1L]]
+  trained_learner = learner$clone(deep = TRUE)
+  trained_learner$param_set$values = mlr3misc::insert_named(
+    trained_learner$param_set$values, best_hpc)
+  trained_learner$train(task, train_indx)
+
+  if (all_hpcs_perf) {
+    # Performance scores for all hpcs (rsmp, train, test)
+    message('Calculate ', measure$id, ' for all hpcs (test + train set)')
+    hpc_res = get_scores_hps(at = at, task = task, train_indx = train_indx,
+      test_indx = test_indx, measure = measure)
+  }
+
+  if (boot_test) {
+    # get bootstrap test set results of learner with best hpc
+    message('Calculate bootstrap CIs for ', measure_test$id)
+    test_boot = get_boot_ci(task = task, train_indx = train_indx,
+      test_indx = test_indx, learner = trained_learner, measure = measure_test,
+      nthreads = nthreads)
+  }
+
+  if (all_hpcs_perf && boot_test) {
+    list(
+      trained_learner = trained_learner,
+      hpc_res  = hpc_res,
+      test_boot = test_boot
+    )
+  } else if (all_hpcs_perf && !boot_test) {
+    list(
+      trained_learner = trained_learner,
+      hpc_res  = hpc_res
+    )
+  } else if (!all_hpcs_perf && boot_test) {
+    list(
+      trained_learner = trained_learner,
+      test_boot = test_boot
+    )
+  } else {
+    list(trained_learner = trained_learner)
+  }
+}
