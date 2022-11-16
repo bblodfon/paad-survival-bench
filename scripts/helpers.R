@@ -438,13 +438,41 @@ get_surv_lrns = function(nthreads = parallelly::availableCores()) {
 
   # XGBoost
   xgboost_cox = lrn('surv.xgboost', nthread = nthreads, booster = 'gbtree',
-    fallback = lrn('surv.kaplan'), objective = 'survival:cox')
+    fallback = lrn('surv.kaplan'), objective = 'survival:cox', id = 'XGBoostCox')
   xgboost_aft = lrn('surv.xgboost', nthread = nthreads, booster = 'gbtree',
-    fallback = lrn('surv.kaplan'), objective = 'survival:aft')
+    fallback = lrn('surv.kaplan'), objective = 'survival:aft', id = 'XGBoostAFT')
 
   list(coxph = coxph, coxnet = coxnet, coxlasso = coxlasso, surv_tree = surv_tree,
     rsf_cindex = rsf_cindex, rsf_logrank = rsf_logrank, rsf_maxstat = rsf_maxstat,
     coxboost = coxboost, xgboost_cox = xgboost_cox, xgboost_aft = xgboost_aft)
+}
+
+#' Add a `distr` prediction for survival learners that don't support it
+#' or overwrite the one that some learners have.
+#'
+#' @param lrn_list a list of survival mlr3 learners (`LearnerSurv`)
+#' @param lrn_ids a vector of learner ids, for which the `distr` will be forcibly
+#' added or overwritten
+#'
+#' @note Deciding on the form of the composed survival prediction: if the
+#' learner's id has 'Cox' somewhere, then we decide on a Proportional Hazards
+#' (`ph`) form. If the learner's id has 'AFT' somewhere, then we decide on an
+#' Accelerated Failure Time (`aft`) form. Otherwise, we go with a PH!
+add_distr_pred = function(lrn_list, lrn_ids = c('SurvivalTree', 'CoxBoost')) {
+  lapply(lrn_list, function(learner) {
+    # if learner doesn't have a `distr` or is in the `lrn_list`, it gets one!
+    if ((!'distr' %in% learner$predict_types) || (learner$id %in% lrn_ids)) {
+      learner = mlr3pipelines::ppl('distrcompositor',
+        learner = learner,
+        estimator = 'kaplan',
+        form = ifelse(grepl(pattern = 'AFT', x = learner$id), 'aft', 'ph'),
+        overwrite = TRUE,
+        graph_learner = FALSE
+      ) %>% mlr3pipelines::GraphLearner$new(id = learner$id)
+    }
+
+    learner
+  })
 }
 
 #' @return a list with suggested tuning spaces for some survival learners
