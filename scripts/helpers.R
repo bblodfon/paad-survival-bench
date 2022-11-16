@@ -372,7 +372,8 @@ get_boot_ci = function(task, train_indx, test_indx, learner, measure = mlr3::msr
 
     return(
       list(
-        t0 = bootci_res$t0, t = boot_res$t, R = bootci_res$R,
+        t0 = bootci_res$t0, t = boot_res$t, t_mean = mean(boot_res$t, na.rm = T),
+        t_median = median(boot_res$t, na.rm = T), R = bootci_res$R,
         normal = bootci_res$normal, basic = bootci_res$basic,
         percent = bootci_res$percent, bca = bootci_res$bca,
         warn = warn, unstable = unstable
