@@ -345,8 +345,7 @@ get_task_powerset = function(task_list) {
 #' If `TRUE`, a list is returned, having the outputs of both the `boot::boot()`
 #' and the `boot::boot.ci()` function.
 get_boot_ci = function(task, train_indx, test_indx, learner, measure = mlr3::msr('surv.cindex'),
-  nthreads = parallelly::availableCores(), nrsmps = 1000, parallel = 'multicore',
-  full_result = FALSE) {
+  nthreads = parallelly::availableCores(), nrsmps = 1000, full_result = FALSE) {
 
   # some checks
   mlr3::assert_task(task)
@@ -357,7 +356,7 @@ get_boot_ci = function(task, train_indx, test_indx, learner, measure = mlr3::msr
   data = task$data(rows = test_indx)
 
   boot_res = boot::boot(
-    data, statistic = boot_fun, R = nrsmps, parallel = parallel, ncpus = nthreads,
+    data, statistic = boot_fun, R = nrsmps, parallel = 'multicore', ncpus = nthreads,
     learner = learner, measure = measure, task = task, train_indx = train_indx
   )
 
