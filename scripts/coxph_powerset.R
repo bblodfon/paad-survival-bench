@@ -126,7 +126,9 @@ med_tbl = tibble(harc = harc_median_tbl$harc_median, unoc = unoc_median_tbl$unoc
 ## get the p-values
 corr_test = psych::corr.test(x = med_tbl, method = 'kendall')
 
-png(filename = paste0(img_path, 'coxph_cor.png'), width = 5, height = 5, units = 'in', res = 300)
-corrplot::corrplot(cor(med_tbl, method = 'kendall'), type = 'upper',
-  p.mat = corr_test$p, insig = 'pch') # label-sig
-dev.off()
+if (FALSE) {
+  png(filename = paste0(img_path, 'coxph_cor.png'), width = 5, height = 5, units = 'in', res = 300)
+  corrplot::corrplot(cor(med_tbl, method = 'kendall'), type = 'upper',
+    p.mat = corr_test$p, insig = 'pch') # label-sig
+  dev.off()
+}
