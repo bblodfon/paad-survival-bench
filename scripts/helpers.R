@@ -326,6 +326,19 @@ get_task_powerset = function(task_list) {
   task_powerset
 }
 
+#' Convenient function to check if the input is an mlr3 measure +
+#' has an assigned label
+#'
+#' @param measure mlr3 `Measure`
+check_measure = function(measure) {
+  mlr3::assert_measure(measure)
+
+  # stop if there is no label!
+  if (is.na(measure$label)) {
+    stop('Please add a label to measure ', measure$id)
+  }
+}
+
 #' Bootstrap function to use with an mlr3 test task and get
 #' Confidence Intervals for a performance metric (e.g. C-index)
 #' @param task an mlr3 `Task`
@@ -352,12 +365,7 @@ get_boot_ci = function(task, train_indx, test_indx, learner, measure = measure,
   # some checks
   mlr3::assert_task(task)
   mlr3::assert_learner(learner)
-  mlr3::assert_measure(measure)
-
-  # stop if there is no label
-  if (is.na(measure$label)) {
-    stop('Please add a label to measure ', measure$id)
-  }
+  check_measure(measure)
 
   # get the test dataset
   data = task$data(rows = test_indx)
@@ -589,8 +597,10 @@ run_at = function(learner, task, train_indx, test_indx, resampling, measure,
   mlr3::assert_task(task)
   mlr3::assert_learner(learner)
   mlr3::assert_resampling(resampling)
-  mlr3::assert_measure(measure)
-  mlr3::assert_measure(measure_test)
+  check_measure(measure)
+  for (test_measure in test_measures) {
+    check_measure(test_measure)
+  }
 
   # Create AutoTuner
   at = mlr3tuning::AutoTuner$new(
