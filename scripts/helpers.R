@@ -188,10 +188,12 @@ get_scores_hps = function(at, task, train_indx, test_indx, measure) {
 
   # add the stored resampling score on the train data
   # This assumes the `measure$id` used when training the AutoTuner starts with 'surv'
-  measure_name = grep(x = colnames(learner_at$archive$data), pattern = '^surv',
+  measure_name = grep(x = colnames(at$archive$data), pattern = '^surv',
     value = TRUE)
   hpc_res = hpc_res %>%
-    mutate(rsmp_score = at$archive$data[[measure_name]])
+    mutate(rsmp_score = at$archive$data[[measure_name]], .after = 1)
+
+  hpc_res
 }
 
 #' Plot the results of `get_scores_hps`
