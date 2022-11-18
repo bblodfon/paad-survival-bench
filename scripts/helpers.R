@@ -575,20 +575,23 @@ get_tuning_spaces = function() {
 #' (e.g. average CV performance).
 #'
 #' With `boot_test` enabled (default), you get the performance estimates
-#' (`measure_test`) on bootstrapped test datasets (1000 by default) using
-#' `nthreads` to speed up computations. If `nthreads` is missing, we use all
-#' available cores.
+#' on bootstrapped test datasets (1000 by default) using `nthreads` to speed
+#' up computations. If `nthreads` is missing, we use all available cores.
+#' `test_measures` is a list of `mlr3` measures. Currently supported Harrell's
+#' C-index, Uno's C-index and the Integrated Brier score.
 #'
-#' @note `measure_test` can be different from `measure` - e.g. the one Harrell's
-#' C-index and the other the Integrated Brier Score. If `measure_test` is not
-#' specified at all, it becomes the same as `measure`.
+#' @note `test_measures` list can be different from `measure` - e.g. one could be
+#' Harrell's C-index and the other the Integrated Brier Score. Note that not
+#' all learners have predictions that can be used by any survival metric, so be
+#' careful which learner + measures you use!
+#' If `test_measures` is not specified at all, it becomes the same as `measure`.
 #'
 run_at = function(learner, task, train_indx, test_indx, resampling, measure,
-  nevals, search_space, all_hpcs_perf = TRUE, boot_test = TRUE, measure_test,
+  nevals, search_space, all_hpcs_perf = TRUE, boot_test = TRUE, test_measures,
   nthreads = nthreads) {
 
-  if (missing(measure_test))
-    measure_test = measure
+  if (missing(test_measures))
+    test_measures = list(measure)
 
   if (missing(nthreads))
     nthreads = parallelly::availableCores()
@@ -628,17 +631,23 @@ run_at = function(learner, task, train_indx, test_indx, resampling, measure,
 
   if (all_hpcs_perf) {
     # Performance scores for all hpcs (rsmp, train, test)
-    message('Calculate ', measure$id, ' for all hpcs (test + train set)')
+    message('Calculate ', measure$id, ' (', measure$label, ')',
+      ' for all hpcs (test + train set)')
     hpc_res = get_scores_hps(at = at, task = task, train_indx = train_indx,
       test_indx = test_indx, measure = measure)
   }
 
   if (boot_test) {
     # get bootstrap test set results of learner with best hpc
-    message('Calculate bootstrap CIs for ', measure_test$id)
-    test_boot = get_boot_ci(task = task, train_indx = train_indx,
-      test_indx = test_indx, learner = trained_learner, measure = measure_test,
-      nthreads = nthreads)
+    # using all specified measures
+    test_boot = list()
+    for (test_measure in test_measures) {
+      message('Calculate bootstrap CIs for ', test_measure$id, ' (',
+        test_measure$label, ')')
+      test_boot[[test_measure$label]] = get_boot_ci(task = task,
+        train_indx = train_indx, test_indx = test_indx, learner = trained_learner,
+        measure = test_measure, nthreads = nthreads)
+    }
   }
 
   if (all_hpcs_perf && boot_test) {
