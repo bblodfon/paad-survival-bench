@@ -331,8 +331,8 @@ get_task_powerset = function(task_list) {
 #' @param test_indx row ids of the test set of the given `task`
 #' @param learner a mlr3 `Learner`, trained on the given `task` using the `train_indx`
 #' rows
-#' @param measure an mlr3 `Measure` object. Currently C-index and Integrated
-#' Brier Score are supported. Default's to Harrell's C-index.
+#' @param measure an mlr3 `Measure` object. Currently C-index (Harrell's and
+#' Uno's) and the Integrated Brier Score are supported.
 #' @param nthreads how many threads to use? Passed on to the `boot` function's
 #' `ncpus` argument. Default is to use all available cores via `parallelly::availableCores()`
 #' @param nrsmps The number of bootstrap replicates/resamplings
@@ -344,13 +344,18 @@ get_task_powerset = function(task_list) {
 #' calculated.
 #' If `TRUE`, a list is returned, having the outputs of both the `boot::boot()`
 #' and the `boot::boot.ci()` function.
-get_boot_ci = function(task, train_indx, test_indx, learner, measure = mlr3::msr('surv.cindex'),
+get_boot_ci = function(task, train_indx, test_indx, learner, measure = measure,
   nthreads = parallelly::availableCores(), nrsmps = 1000, full_result = FALSE) {
 
   # some checks
   mlr3::assert_task(task)
   mlr3::assert_learner(learner)
   mlr3::assert_measure(measure)
+
+  # stop if there is no label
+  if (is.na(measure$label)) {
+    stop('Please add a label to measure ', measure$id)
+  }
 
   # get the test dataset
   data = task$data(rows = test_indx)
@@ -372,6 +377,7 @@ get_boot_ci = function(task, train_indx, test_indx, learner, measure = mlr3::msr
 
     return(
       list(
+        msr_label = measure$label, msr_id = measure$id,
         t0 = bootci_res$t0, t = boot_res$t[,1], t_mean = mean(boot_res$t, na.rm = T),
         t_median = median(boot_res$t, na.rm = T), R = bootci_res$R,
         normal = bootci_res$normal, basic = bootci_res$basic,
