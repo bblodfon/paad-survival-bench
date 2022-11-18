@@ -653,20 +653,26 @@ run_at = function(learner, task, train_indx, test_indx, resampling, measure,
   if (all_hpcs_perf && boot_test) {
     list(
       trained_learner = trained_learner,
+      train_measure = measure$label,
       hpc_res  = hpc_res,
       test_boot = test_boot
     )
   } else if (all_hpcs_perf && !boot_test) {
     list(
       trained_learner = trained_learner,
+      train_measure = measure$label,
       hpc_res  = hpc_res
     )
   } else if (!all_hpcs_perf && boot_test) {
     list(
       trained_learner = trained_learner,
+      train_measure = measure$label,
       test_boot = test_boot
     )
   } else {
-    list(trained_learner = trained_learner)
+    list(
+      trained_learner = trained_learner,
+      train_measure = measure$label
+    )
   }
 }
