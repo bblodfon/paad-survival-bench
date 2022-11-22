@@ -618,8 +618,9 @@ get_lrns_and_ps = function(nthreads, ids) {
 #' (e.g. average CV performance).
 #'
 #' With `boot_test` enabled (default), you get the performance estimates
-#' on bootstrapped test datasets (1000 by default) using `nthreads` to speed
-#' up computations. If `nthreads` is missing, we use all available cores.
+#' on bootstrapped test datasets (`nrsmps` = 1000 by default) using `nthreads`
+#' to speed up computations. If `nthreads` is missing, we use all available cores.
+#' Parallelization is not currently working with `boot()` so we suggest 1 thread.
 #' `test_measures` is a list of `mlr3` measures. Currently supported Harrell's
 #' C-index, Uno's C-index and the Integrated Brier score.
 #'
@@ -631,7 +632,7 @@ get_lrns_and_ps = function(nthreads, ids) {
 #'
 run_at = function(learner, task, train_indx, test_indx, resampling, measure,
   nevals, search_space, all_hpcs_perf = TRUE, boot_test = TRUE, test_measures,
-  nthreads = nthreads) {
+  nrsmps = 1000, nthreads = nthreads) {
 
   if (missing(test_measures))
     test_measures = list(measure)
@@ -689,7 +690,7 @@ run_at = function(learner, task, train_indx, test_indx, resampling, measure,
         test_measure$label, ')')
       test_boot[[test_measure$label]] = get_boot_ci(task = task,
         train_indx = train_indx, test_indx = test_indx, learner = trained_learner,
-        measure = test_measure, nthreads = nthreads)
+        measure = test_measure, nrsmps = nrsmps, nthreads = nthreads)
     }
   }
 
