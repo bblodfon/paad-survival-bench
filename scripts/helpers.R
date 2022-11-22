@@ -491,11 +491,12 @@ add_distr_pred = function(lrn_list, lrn_ids = c('SurvivalTree', 'CoxBoost')) {
   })
 }
 
-#' @return a list with suggested tuning spaces for some survival learners
-get_tuning_spaces = function() {
+#' @return a list with suggested parameter spaces for some survival learners
+#' (to be used for tuning)
+get_param_spaces = function() {
   coxnet = paradox::ps(
     lambda = p_dbl(1e-03, 10, logscale = TRUE),
-    alpha  = p_dbl(0, 1)) # from Ridge to Lasso penalty)
+    alpha  = p_dbl(0, 1)) # from Ridge to Lasso penalty
 
   coxlasso = paradox::ps(
     lambda = p_dbl(1e-03, 10, logscale = TRUE)
@@ -525,7 +526,7 @@ get_tuning_spaces = function() {
     max_depth = p_int(2, 8),
     min_child_weight = p_dbl(1, 128, logscale = TRUE))
 
-   xgboost_cox2 = paradox::ps(
+   xgboost_cox_reg = paradox::ps(
      nrounds = p_int(150, 1500),
      eta = p_dbl(1e-04, 1, logscale = TRUE),
      max_depth = p_int(2, 8),
@@ -544,19 +545,61 @@ get_tuning_spaces = function() {
      # this parameter space to work
    )
 
-   xgboost_aft = xgboost_cox$clone(deep = TRUE)$add(paradox::ps(
-     aft_loss_distribution = p_fct(c('normal', 'logistic', 'extreme')),
-     aft_loss_distribution_scale = p_dbl(0.5, 2.0)
-   ))
+   xgboost_aft = xgboost_cox$
+     clone(deep = TRUE)$
+     add(paradox::ps(
+       aft_loss_distribution = p_fct(c('normal', 'logistic', 'extreme')),
+       aft_loss_distribution_scale = p_dbl(0.5, 2.0)
+       )
+     )
 
-   xgboost_aft2 = xgboost_cox2$clone(deep = TRUE)$add(paradox::ps(
-     aft_loss_distribution = p_fct(c('normal', 'logistic', 'extreme')),
-     aft_loss_distribution_scale = p_dbl(0.5, 2.0)
-   ))
+   xgboost_aft_reg = xgboost_cox_reg$
+     clone(deep = TRUE)$
+     add(paradox::ps(
+       aft_loss_distribution = p_fct(c('normal', 'logistic', 'extreme')),
+       aft_loss_distribution_scale = p_dbl(0.5, 2.0)
+       )
+     )
 
   list(coxnet = coxnet, coxlasso = coxlasso, surv_tree = surv_tree, rsf = rsf,
-    coxboost = coxboost, xgboost_cox = xgboost_cox, xgboost_aft = xgboost_aft,
-    xgboost_cox2 = xgboost_cox2, xgboost_aft2 = xgboost_aft2)
+    coxboost = coxboost, xgboost_cox = xgboost_cox, xgboost_cox_reg = xgboost_cox_reg,
+    xgboost_aft = xgboost_aft, xgboost_aft_reg = xgboost_aft_reg)
+}
+
+#' @param nthreads for implicit parallelization (RSFs, XGBoost)
+#' @param ids learners ids to filter (these are manually set)
+#'
+#' @return a `data.table` object with learner ids, `Learner` objects and their
+#' corresponding `ParamSet`s to be used for tuning
+get_lrns_and_ps = function(nthreads, ids) {
+  learners = suppressWarnings(get_surv_lrns(nthreads))
+  pss = get_param_spaces()
+
+  lrn_tbl = tibble::tribble(
+    ~id, ~learner, ~param_set,
+    'coxnet', learners$coxnet, pss$coxnet,
+    'coxlasso', learners$coxlasso, pss$coxlasso,
+    'surv_tree', learners$surv_tree, pss$surv_tree,
+    'rsf_cindex', learners$rsf_cindex, pss$rsf,
+    'rsf_logrank', learners$rsf_logrank, pss$rsf,
+    'rsf_maxstat', learners$rsf_maxstat, pss$rsf,
+    'coxboost', learners$coxboost, pss$coxboost,
+    'xgboost_cox', learners$xgboost_cox, pss$xgboost_cox,
+    # need to set `early_stopping_set` appropriately
+    'xgboost_cox_reg', learners$xgboost_cox, pss$xgboost_cox_reg,
+    'xgboost_aft', learners$xgboost_aft, pss$xgboost_aft,
+    # need to set `early_stopping_set` appropriately
+    'xgboost_aft_reg', learners$xgboost_aft, pss$xgboost_aft_reg,
+  )
+
+  # asser that ids are unique
+  stopifnot(length(unique(lrn_tbl$id)) == length(lrn_tbl$id))
+
+  if (!missing(ids)) {
+    lrn_tbl = lrn_tbl %>% filter(id %in% ids)
+  }
+
+  data.table::as.data.table(lrn_tbl)
 }
 
 #' Run `AutoTuner` on train set of a given task and get bootstrap estimates of
