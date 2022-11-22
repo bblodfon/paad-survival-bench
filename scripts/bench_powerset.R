@@ -40,7 +40,7 @@ config = list(
 )
 
 # Resampling for tuning the train set
-resampling = rsmp('repeated_cv', repeats = repeats, folds = nfolds)
+resampling = rsmp('repeated_cv', repeats = config$repeats, folds = config$nfolds)
 
 # Measures of performance
 harrell_c = msr('surv.cindex')
@@ -97,7 +97,7 @@ for(row_id in 1:n_benchmarks) {
   # distr prediction is needed pending on train measure?
 
   res = run_at(learner, task, train_indx, test_indx, resampling, measure,
-    nevals, search_space, all_hpcs_perf = TRUE, boot_test = TRUE,
+    config$nevals, search_space, all_hpcs_perf = TRUE, boot_test = TRUE,
     test_measures, nrsmps = 100, nthreads = 1)
 
   res_list[[row_id]] = tibble::tibble(
