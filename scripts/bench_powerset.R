@@ -36,7 +36,8 @@ lgr::get_logger('mlr3')$set_threshold('warn')
 config = list(
   nfolds = 5, # for (repeated) CV resampling
   repeats = 1, # for (repeated) CV resampling
-  nevals = 128 # for Bayesian Optimization: number of hpcs to search
+  nevals = 128, # for Bayesian Optimization: number of hpcs to search
+  nthreads = 16 # implicit learner parallelization (RSFs, xgboost)
 )
 
 # Resampling for tuning the train set
@@ -69,7 +70,7 @@ train_indx = data_split$train_indx # 100
 test_indx  = data_split$test_indx # 45
 
 # Learners & Tuning Parameters ----
-lrn_tbl = get_lrns_and_ps(nthreads = nthreads, ids = lrn_ids)
+lrn_tbl = get_lrns_and_ps(nthreads = config$nthreads, ids = lrn_ids)
 
 # Benchmark ----
 bench_grid = data.table::CJ(task_id = task_ids, lrn_id = lrn_tbl$id, sorted = FALSE)
