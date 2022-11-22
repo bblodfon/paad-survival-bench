@@ -375,7 +375,9 @@ get_boot_ci = function(task, train_indx, test_indx, learner, measure = measure,
     learner = learner, measure = measure, task = task, train_indx = train_indx
   )
 
-  bootci_res = boot::boot.ci(boot_res, type = c('basic', 'norm', 'perc', 'bca'))
+  bootci_res = suppressWarnings(
+    boot::boot.ci(boot_res, type = c('basic', 'norm', 'perc', 'bca'))
+  )
 
   if (full_result)
     return(list(boot_res = boot_res, bootci_res = bootci_res))
