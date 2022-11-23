@@ -36,7 +36,7 @@ lgr::get_logger('mlr3')$set_threshold('warn')
 config = list(
   nfolds = 5, # for (repeated) CV resampling
   repeats = 1, # for (repeated) CV resampling
-  nevals = 128, # for Bayesian Optimization: number of hpcs to search
+  nevals = 64, # for Bayesian Optimization: number of hpcs to search
   nthreads = 16 # implicit learner parallelization (RSFs, xgboost)
 )
 
@@ -105,7 +105,7 @@ for(row_id in 1:n_benchmarks) {
 
   res = run_at(learner, task, train_indx, test_indx, resampling, measure,
     config$nevals, search_space, all_hpcs_perf = TRUE, boot_test = TRUE,
-    test_measures, nrsmps = 100, nthreads = 1)
+    test_measures, nrsmps = 1000, nthreads = 1)
 
   res_list[[row_id]] = tibble::tibble(
     task_id = task_id,
