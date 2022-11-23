@@ -103,9 +103,11 @@ for(row_id in 1:n_benchmarks) {
   #' when `mlr3extralearners` is updated
   #' distr prediction is needed pending on train measure or more general?
 
+  tic()
   res = run_at(learner, task, train_indx, test_indx, resampling, measure,
     config$nevals, search_space, all_hpcs_perf = TRUE, boot_test = TRUE,
     test_measures, nrsmps = 1000, nthreads = 1)
+  toc()
 
   res_list[[row_id]] = tibble::tibble(
     task_id = task_id,
