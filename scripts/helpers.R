@@ -662,9 +662,9 @@ run_at = function(learner, task, train_indx, test_indx, resampling, measure,
   )
 
   # Train AutoTuner
-  message('Train start: (', learner$id, ', ', task$id, ')')
+  message('Start tuning: (', learner$id, ', ', task$id, ')')
   at$train(task, train_indx)
-  message('Train finished: (', learner$id, ', ', task$id, ')')
+  message('Finished tuning: (', learner$id, ', ', task$id, ')')
 
   # Create trained learner using the best hyperparameter config (hpc) from BO
   # Surrogate doesn't assign the best hpc by default, see
@@ -676,7 +676,7 @@ run_at = function(learner, task, train_indx, test_indx, resampling, measure,
   trained_learner$train(task, train_indx)
 
   if (all_hpcs_perf) {
-    # Performance scores for all hpcs (rsmp, train, test)
+    # Performance scores for all hpcs (rsmp, train and test scores)
     message('Calculate ', measure$id, ' (', measure$label, ')',
       ' for all hpcs (test + train set)')
     hpc_res = get_scores_hps(at = at, task = task, train_indx = train_indx,

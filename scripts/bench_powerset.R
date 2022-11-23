@@ -50,7 +50,7 @@ uno_c = msr('surv.cindex', weight_meth = 'G2')
 uno_c$label = 'UnoC'
 ibrier = msr('surv.graf')
 ibrier$label = 'IBrier'
-measure = harrell_c # used for training
+measure = harrell_c # used for tuning
 test_measures = list(harrell_c, uno_c) # used for bootstrap on the test set
 
 config$tune_measure = measure$label
