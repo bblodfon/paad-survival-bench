@@ -53,7 +53,7 @@ ibrier$label = 'IBrier'
 measure = harrell_c # used for training
 test_measures = list(harrell_c, uno_c) # used for bootstrap on the test set
 
-config$train_measure = measure$label
+config$tune_measure = measure$label
 config$test_measures = sapply(test_measures, function(x) x$label)
 
 # learner ids (will be included in the benchmark result)
