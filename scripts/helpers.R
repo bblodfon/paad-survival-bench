@@ -594,7 +594,7 @@ get_lrns_and_ps = function(nthreads, ids) {
     'xgboost_aft_reg', learners$xgboost_aft, pss$xgboost_aft_reg,
   )
 
-  # asser that ids are unique
+  # assert that ids are unique
   stopifnot(length(unique(lrn_tbl$id)) == length(lrn_tbl$id))
 
   if (!missing(ids)) {
