@@ -83,6 +83,8 @@ coxph_res = dplyr::bind_rows(res_list)
 # save results
 saveRDS(coxph_res, file = paste0(res_path, 'coxph_res.rds'))
 
+coxph_res = readRDS(file = paste0(res_path, 'coxph_res.rds'))
+
 # Plot performance box-plots
 coxph_res %>%
   mutate(task_id = forcats::fct_reorder(task_id, harc_median, .desc = TRUE)) %>%
