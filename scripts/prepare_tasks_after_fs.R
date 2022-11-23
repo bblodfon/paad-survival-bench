@@ -101,17 +101,16 @@ data_stats3 %>%
   select(-c(total_nfeats, avg_feat_set_per, avg_feat_set_per))
 
 #' choose #features based on `max_nfeats` value and `score_norm`
+#' #features = 13 for `tasks_fs.rds` and #features = 26 for `tasks_fs_more_features.rds`
 max_nfeats = 13 # the modality which has the highest score will have this #features
 nfeat_tbl = data_stats3 %>%
   select(data_type, avg_score, avg_feat_set_len, score_norm) %>%
   mutate(nfeats = ceiling(max_nfeats * score_norm)) %>%
   arrange(desc(score_norm))
 nfeat_tbl
-nfeat_tbl %>% summarise(sum(nfeats))
+nfeat_tbl %>% summarise(total_nfeats = sum(nfeats))
 
 # Subset tasks to selected features ----
-task_mRNA = tasks$mRNA
-
 feat_list = list()
 for (data_modality in names(fs_consensus_res)) {
   # selected feature frequency in descending order
@@ -144,8 +143,9 @@ task_clinical = readRDS(file = 'data/task_clinical.rds')
 
 # scale to unit variance as the other omics datasets
 pos = po('scale')
+var_flt = flt('variance')
 task_clinical = pos$train(list(task_clinical))[[1L]]
-task_clinical_scaled$data()
+task_clinical$data()
 var_flt$calculate(task_clinical)
 var_flt$scores # ok
 
@@ -161,3 +161,4 @@ length(tasks) # 31 tasks
 
 # Save tasks ----
 saveRDS(tasks, file = 'data/tasks_fs.rds')
+saveRDS(tasks, file = 'data/tasks_fs_more_features.rds')
