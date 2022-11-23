@@ -92,10 +92,16 @@ for(row_id in 1:n_benchmarks) {
   learner = lrn_tbl[id == lrn_id]$learner[[1L]]
   search_space = lrn_tbl[id == lrn_id]$param_set[[1L]]
 
+  # CoxBoost: don't penalize clinical features in case they are included
+  # Note: clinical variables should be first in a multimodal dataset
+  if (grepl(pattern = '^Clinical', task_id) && (lrn_id == 'coxboost')) {
+    learner$param_set$values$unpen.index = 1:length(tasks$Clinical$feature_names)
+  }
+
   # TODO
-  # cox_boost => unpen
-  # early stopping for xgboost param_set?
-  # distr prediction is needed pending on train measure?
+  #' Set `early_stopping_set = test/train?` for `xgboost_{cox/aft}_reg` learner
+  #' when `mlr3extralearners` is updated
+  #' distr prediction is needed pending on train measure or more general?
 
   res = run_at(learner, task, train_indx, test_indx, resampling, measure,
     config$nevals, search_space, all_hpcs_perf = TRUE, boot_test = TRUE,
