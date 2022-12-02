@@ -198,8 +198,11 @@ get_scores_hps = function(at, task, train_indx, test_indx, measure) {
 }
 
 #' Plot the results of `get_scores_hps`
+#' @param hpc_res tibble with columns `index`, `rsmp_score`, `train_score`,
+#' `test_score`
 get_hpc_perf_plot = function(hpc_res, rand_perf_score = 0.5,
-  xlab = 'Number of evaluations/hpcs (BO)', measure_name = 'C-index') {
+  xlab = 'Number of evaluations/hpcs (BO)', measure_name = 'C-index',
+  title = NULL) {
   hpc_res %>% ggplot2::ggplot(aes(x = index)) +
     geom_line(aes(y = train_score, color = 'Train'), linewidth = 0.3) +
     geom_line(aes(y = rsmp_score, color = 'Train (rsmp)'), linewidth = 0.3) +
@@ -212,7 +215,7 @@ get_hpc_perf_plot = function(hpc_res, rand_perf_score = 0.5,
         'Test' = '#4DAF4A')
     ) +
     geom_hline(yintercept = rand_perf_score, linetype = 'dotted', color = 'red') +
-    labs(x = xlab, y = measure_name) +
+    labs(x = xlab, y = measure_name, title = title) +
     theme_bw(base_size = 14) + theme(legend.position = 'top')
 }
 
