@@ -727,3 +727,42 @@ run_at = function(learner, task, train_indx, test_indx, resampling, measure,
     )
   }
 }
+
+#' Given a measure string `label`, generate a nice full name of the measure
+#' based on whether a certain substring appears within it.
+#' Used for plotting purposes.
+nice_msr_label = function(label) {
+  if (grepl(pattern = 'Harrell', x = label))
+    return('Harrell\'s C-index')
+  else if (grepl(pattern = 'Uno', x = label))
+    return('Uno\'s C-index')
+  else if (grepl(pattern = 'Brier', x = label))
+    return('Integrated Brier Score')
+  else
+    return(label)
+}
+
+#' Given a learner string `label`, generate a nice full name of the learner
+#' based on whether a certain substring appears within it.
+#' Used for plotting purposes.
+nice_lrn_label = function(label) {
+  if (grepl(pattern = 'coxnet', x = label, ignore.case = TRUE))
+    return('CoxNet')
+  else if (grepl(pattern = 'coxlasso', x = label, ignore.case = TRUE))
+    return('CoxLasso')
+  else if (grepl(pattern = 'tree', x = label, ignore.case = TRUE))
+    return ('SurvTree')
+  else if (grepl(pattern = 'logrank', x = label, ignore.case = TRUE))
+    return('RSF (logrank)')
+  else if (grepl(pattern = 'cindex', x = label, ignore.case = TRUE))
+    return('RSF (cindex)')
+  else if (grepl(pattern = 'maxstat', x = label, ignore.case = TRUE))
+    return('RSF (maxstat)')
+  else if (grepl(pattern = 'coxboost', x = label, ignore.case = TRUE))
+    return('CoxBoost')
+  else if (grepl(pattern = 'xgboost', x = label, ignore.case = TRUE))
+    return(ifelse(grepl(pattern = 'cox', x = label, ignore.case = TRUE),
+      'XGBoost (Cox)', 'XGBoost (AFT)'))
+  else
+    return(label)
+}
