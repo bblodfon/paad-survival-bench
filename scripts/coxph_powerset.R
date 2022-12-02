@@ -37,6 +37,7 @@ uno_c = msr('surv.cindex', weight_meth = 'G2')
 uno_c$label = 'UnoC'
 ibrier = msr('surv.graf')
 ibrier$label = 'IBrier'
+ibrier$param_set$values$proper = TRUE
 
 # Tasks (see `prepare_tasks_after_fs.R`)
 tasks = readRDS(file = 'data/tasks_fs.rds')
