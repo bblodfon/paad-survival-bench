@@ -484,16 +484,17 @@ add_distr_pred = function(lrn_list, lrn_ids = c('SurvivalTree', 'CoxBoost')) {
   lapply(lrn_list, function(learner) {
     # if learner doesn't have a `distr` or is in the `lrn_list`, it gets one!
     if ((!'distr' %in% learner$predict_types) || (learner$id %in% lrn_ids)) {
-      learner = mlr3pipelines::ppl('distrcompositor',
+      gr_lrn = mlr3pipelines::ppl('distrcompositor',
         learner = learner,
         estimator = 'kaplan',
         form = ifelse(grepl(pattern = 'AFT', x = learner$id), 'aft', 'ph'),
         overwrite = TRUE,
         graph_learner = FALSE
       ) %>% mlr3pipelines::GraphLearner$new(id = learner$id)
+      gr_lrn$label = learner$label
     }
 
-    learner
+    gr_lrn
   })
 }
 
