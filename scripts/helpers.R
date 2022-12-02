@@ -1,4 +1,5 @@
 library(mlr3verse)
+library(mlr3mbo)
 library(purrr)
 library(ggplot2)
 suppressMessages(library(dplyr))
