@@ -96,6 +96,26 @@ paad_task$missings()
 autoplot(paad_task, rhs = 'group')
 ggsave(filename = 'img/model_extr/survival.png', width = 6, height = 5, dpi = 350)
 
+## KM plot of censored patients in train and test groups
+paad_task_cens = mlr3proba::as_task_surv(
+  x = clinical_data_tbl %>% mutate(status = 1 - status),
+  time = 'time', event = 'status', id = 'Clinical-Cens'
+)
+autoplot(paad_task_cens, rhs = 'group')
+ggsave(filename = 'img/model_extr/cens_survival.png', width = 6, height = 5, dpi = 350)
+
+# check the time distributions of dead vs censored patients on all the dataset
+paad_task$data(cols = c('time', 'status')) %>%
+  mutate(status = as.factor(status)) %>%
+  ggplot(aes(x = time, color = status)) +
+  geom_density() +
+  labs(title = 'Uncensored vs Censoring distribution') +
+  theme_bw(base_size = 14)
+ggsave(filename = 'img/model_extr/distr_uncens_vs_cens.png', width = 6, height = 5, dpi = 350)
+
+paad_task$data(cols = c('time', 'status'))[status == 0, time]
+plot(density(values))
+
 ## Time
 clinical_data_tbl %>%
   ggplot(aes(x = group, y = time, color = group)) +
