@@ -51,10 +51,13 @@ test_indx  = data_split$test_indx
 learner = lrn('surv.coxph', id = 'CoxPH', fallback = lrn('surv.kaplan'))
 
 res_list = list()
+trained_lrn_list = list()
 index = 1
 for (task in tasks) {
   message('Train start: (', learner$id, ', ', task$id, ')')
   trained_learner = learner$clone(deep = TRUE)$train(task, train_indx)
+
+  trained_lrn_list[[task$id]] = trained_learner
 
   message('Calculate bootstrap CIs (Harrell\'s C-index)')
   test_boot_harc = get_boot_ci(task = task, train_indx = train_indx,
@@ -84,6 +87,11 @@ coxph_res = dplyr::bind_rows(res_list)
 # save results
 saveRDS(coxph_res, file = paste0(res_path, 'coxph_res.rds'))
 
+# check if models are meaningful (at least one coefficient different from 0)
+pvals = lapply(trained_lrn_list, function(lrn) summary(lrn$model)$waldtest['pvalue'])
+all(pvals < 0.05) # most are, even with smaller threshold
+
+# reload saved results
 coxph_res = readRDS(file = paste0(res_path, 'coxph_res.rds'))
 
 # Plot performance box-plots
