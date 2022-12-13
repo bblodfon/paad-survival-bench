@@ -31,9 +31,9 @@ lgr::get_logger('bbotk')$set_threshold('warn')
 lgr::get_logger('mlr3')$set_threshold('warn')
 
 # Measures of performance
-harrell_c = msr('surv.cindex')
+harrell_c = msr('surv.cindex') # cutoff = 500
 harrell_c$label = 'HarrellC'
-uno_c = msr('surv.cindex', weight_meth = 'G2')
+uno_c = msr('surv.cindex', weight_meth = 'G2') # cutoff = 500
 uno_c$label = 'UnoC'
 ibrier = msr('surv.graf')
 ibrier$label = 'IBrier'
