@@ -52,17 +52,19 @@ all_boot_res = dplyr::bind_rows(all_boot_scores)
 all_boot_res
 
 # Tuning-validation plots ----
-for (row_id in 1:nrow(bm_res)) {
-  results = bm_res$results[[row_id]]
-  task_id = bm_res$task_id[row_id]
-  lrn_name = nice_lrn_label(results$trained_learner$id)
+if (FALSE) { # too many plots, produce some manually
+  for (row_id in 1:nrow(bm_res)) {
+    results = bm_res$results[[row_id]]
+    task_id = bm_res$task_id[row_id]
+    lrn_name = nice_lrn_label(results$trained_learner$id)
 
-  get_hpc_perf_plot(hpc_res = results$hpc_res,
-    measure_name = nice_msr_label(results$train_measure),
-    title = paste0(lrn_name, ' - ', task_id))
+    get_hpc_perf_plot(hpc_res = results$hpc_res,
+      measure_name = nice_msr_label(results$train_measure),
+      title = paste0(lrn_name, ' - ', task_id))
 
-  ggsave(filename = paste0(img_path, '/tuning_plots/', results$trained_learner$id, '_',
-    task_id, '.png'), width = 6, height = 5, dpi = 300)
+    ggsave(filename = paste0(img_path, '/tuning_plots/', results$trained_learner$id, '_',
+      task_id, '.png'), width = 6, height = 5, dpi = 300)
+  }
 }
 
 # Plot Learner performance across tasks ----
