@@ -766,3 +766,184 @@ nice_lrn_label = function(label) {
   else
     return(label)
 }
+
+#' @param ba BenchmarkAggr object whose `ba$data` data.table has columns `task_id`,
+#' `learner_id` as well columns having the aggregated score for each combination
+#' of task and learner
+#' @param measure name of measure column of `ba$data` which will be used to
+#' calculate the ranks
+#'
+#' @return a matrix of ranks (learners x tasks - rows x columns)
+get_ranks = function(ba, measure = NULL, minimize = FALSE) {
+  if (is.null(measure) || (!measure %in% ba$measures)) {
+    stop('You have to specify a measure (column name) of `ba$data` to use
+      for the calculation of the ranks')
+  }
+  aggr_res = ba$data %>% as_tibble()
+
+  learners = ba$learners
+  tasks = ba$tasks
+  nlrns = ba$nlrns
+  ntasks = ba$ntasks
+
+  rmat = matrix(data = 0, nrow = nlrns, ncol = ntasks)
+  rownames(rmat) = learners
+  colnames(rmat) = tasks
+
+  for (task in colnames(rmat)) {
+    scores = aggr_res %>%
+      filter(task_id == task) %>%
+      select(learner_id, !!measure) %>%
+      arrange(factor(learner_id, levels = learners)) %>%
+      pull(!!measure)
+
+    if (minimize) {
+      ranks = rank(scores)
+    } else {
+      ranks = rank(-scores)
+    }
+
+    rmat[,task] = ranks
+  }
+
+  rmat
+}
+
+#' @param ba BenchmarkAggr object
+#' @param rmat Rank matrix (see `get_ranks`)
+#' @param measure one of ba$measures
+#' @param p.value Default 0.05 (for the nemenyi test)
+#'
+#' @return a list with useful result objects for plotting critical difference
+#' plots and posthoc Friedman-Nemeyi p-values
+#'
+#' tweaked from `mlr3benchmark`
+get_cd = function(ba, rmat, measure, p.value = 0.05) {
+  # Average ranks per learner across tasks
+  mean_rank = rowMeans(rmat)
+  df = data.frame(mean_rank,
+    learner_id = names(mean_rank),
+    rank = rank(mean_rank, ties.method = "average"))
+
+  # Orientation of descriptive lines yend(=y-value of horizontal line)
+  right = df$rank > stats::median(df$rank)
+  # Better learners are ranked ascending
+  df$yend[!right] = rank(df$rank[!right], ties.method = "first") + 1
+  # Worse learners ranked descending
+  df$yend[right] = rank(-df$rank[right], ties.method = "first") + 1
+  # Better half of learner have lines to left / others right.
+  df$xend = ifelse(!right, 0L, max(df$rank) + 1L)
+  # Save orientation, can be used for vjust of text later on
+  df$right = as.numeric(right)
+
+  # Perform nemenyi test
+  nem_test = ba$friedman_posthoc(meas = measure, p.value = p.value)
+
+  # Calculate Critical Difference from Demsar (2006)
+  cd_val = (stats::qtukey(1 - p.value, nlrns, 1e+06) / sqrt(2L)) *
+    sqrt(nlrns * (nlrns + 1L) / (6L * ntasks))
+
+  cd = list(data = df, test = nem_test, cd = cd_val)
+
+  # Create data for connecting bars (only for nemenyi test)
+  sub = sort(df$mean_rank)
+  ## Compute a matrix of all possible bars
+  mat = apply(t(outer(sub, sub, `-`)), c(1, 2), function(x) ifelse(x > 0 && x < cd_val, x, 0))
+  ## Get start and end point of all possible bars
+  xstart = round(apply(mat + sub, 1, min), 3)
+  xend = round(apply(mat + sub, 1, max), 3)
+  nem_df = data.table::data.table(xstart, xend, "diff" = xend - xstart) # nolint
+  ## For each unique endpoint of a bar keep only the longest bar
+  nem_df = nem_df[, .SD[which.max(.SD$diff)], by = "xend"] # nolint
+  ## Take only bars with length > 0
+  nem_df = nem_df[nem_df$diff > 0, ] # nolint
+  ## Descriptive lines for learners start at 0.5, 1.5, ...
+  rank_y = rank(c(seq.int(length.out = sum(nem_df$xstart <= stats::median(df$mean_rank))),
+    seq.int(length.out = sum(nem_df$xstart > stats::median(df$mean_rank)))),
+    ties.method = "first")
+  nem_df$y = seq.int(from = 0.5, by = 0.5, length.out = nrow(nem_df))[rank_y]
+  cd$nemenyi_data = as.data.frame(nem_df)
+
+  cd
+}
+
+#' ggplot-based CD plot
+#' tweaked from `mlr3benchmark`
+plot_cd = function(cd) {
+  # Plot descriptive lines and learner names
+  p = ggplot(cd$data)
+  # Point at mean rank
+  p = p + geom_point(aes(x = .data[["mean_rank"]], y = 0,
+    colour = .data[["learner_id"]]), size = 3)
+  # Horizontal descriptive bar
+  p = p + geom_segment(aes(x = .data[["mean_rank"]], y = 0,
+    xend = .data[["mean_rank"]], yend = .data[["yend"]],
+    color = .data[["learner_id"]]), linewidth = 1)
+  # Vertical descriptive bar
+  p = p + geom_segment(aes(x = .data[["mean_rank"]], y = .data[["yend"]],
+    xend = .data[["xend"]], yend = .data[["yend"]],
+    color = .data[["learner_id"]]), linewidth = 1)
+  # Plot Learner name
+  p = p + geom_text(aes(x = .data[["xend"]], y = .data[["yend"]],
+    label = .data[["learner_id"]], color = .data[["learner_id"]],
+    hjust = .data[["right"]]), vjust = -1)
+
+  p = p + xlab("Average Rank")
+  # Change appearance
+  p = p + scale_x_continuous(breaks = c(0:max(cd$data$xend)))
+  p = p + theme(axis.text.y = element_blank(),
+    axis.ticks.y = element_blank(),
+    axis.title.y = element_blank(),
+    legend.position = "none",
+    panel.background = element_blank(),
+    panel.border = element_blank(),
+    axis.line = element_line(linewidth = 1),
+    axis.line.y = element_blank(),
+    panel.grid.major = element_blank()) # plot.background = element_blank())
+
+  # Add crit difference test (descriptive)
+  p = p + annotate("text",
+    label = paste("Critical Difference =", round(cd$cd, 2), sep = " "),
+    y = max(cd$data$yend) + 0.8, x = mean(cd$data$mean_rank))
+
+  # Plot the critical difference bars
+  nemenyi_data = cd$nemenyi_data
+  if (!(nrow(nemenyi_data) == 0L)) {
+    # Add connecting bars
+    p = p + geom_segment(aes(x = .data[["xstart"]], y = .data[["y"]],
+      xend = .data[["xend"]], yend = .data[["y"]]),
+      data = nemenyi_data, size = 1.3, color = "dimgrey", alpha = 0.9,
+    )
+  } else {
+    message("No connecting bars to plot!")
+  }
+
+  return(p)
+}
+
+#' Plot the p-values from the post-hoc Friedman-Nemenyi all-pairs test
+#' tweaked from `mlr3benchmark`
+plot_fn = function(cd, p.value = 0.05) {
+  p = cd$test$p.value # nemeyi p-values
+  p = p[rev(seq_len(nrow(p))), ]
+  p = t(p)
+  p = cbind(expand.grid(rownames(p), colnames(p)), value = as.numeric(p))
+  p$value2 = factor(ifelse(p$value < p.value, "0", "1"))
+
+  ggplot(data = p, aes(x = Var1, y = Var2, fill = value2)) +
+    geom_tile(size = 0.5, color = !is.na(p$value2)) +
+    scale_fill_manual(name = "p-value",
+      values = c("0" = 'red', "1" = "white"),
+      breaks = c("0", "1"),
+      labels = c(paste0("<= ", p.value), paste0("> ", p.value))) +
+    geom_text(aes(label = ifelse(!is.na(value), sprintf("%1.4f",value), ''))) +
+    theme(axis.title = element_blank(),
+      axis.text.y = element_text(angle = 45),
+      axis.text.x = element_text(angle = 45, vjust = 0.8, hjust = 0.7),
+      panel.grid = element_blank(),
+      panel.background = element_rect(fill = "white"),
+      legend.background = element_rect(color = "black"),
+      legend.key = element_rect(color = "black"),
+      legend.position = c(1, 0.9),
+      legend.justification = "right")
+}
