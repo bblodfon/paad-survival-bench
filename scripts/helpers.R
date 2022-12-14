@@ -840,8 +840,8 @@ get_cd = function(ba, rmat, measure, p.value = 0.05) {
   nem_test = ba$friedman_posthoc(meas = measure, p.value = p.value)
 
   # Calculate Critical Difference from Demsar (2006)
-  cd_val = (stats::qtukey(1 - p.value, nlrns, 1e+06) / sqrt(2L)) *
-    sqrt(nlrns * (nlrns + 1L) / (6L * ntasks))
+  cd_val = (stats::qtukey(1 - p.value, ba$nlrns, 1e+06) / sqrt(2L)) *
+    sqrt(ba$nlrns * (ba$nlrns + 1L) / (6L * ba$ntasks))
 
   cd = list(data = df, test = nem_test, cd = cd_val)
 
@@ -912,7 +912,7 @@ plot_cd = function(cd) {
     # Add connecting bars
     p = p + geom_segment(aes(x = .data[["xstart"]], y = .data[["y"]],
       xend = .data[["xend"]], yend = .data[["y"]]),
-      data = nemenyi_data, size = 1.3, color = "dimgrey", alpha = 0.9,
+      data = nemenyi_data, linewidth = 1.3, color = "dimgrey", alpha = 0.9,
     )
   } else {
     message("No connecting bars to plot!")
@@ -931,7 +931,7 @@ plot_fn = function(cd, p.value = 0.05) {
   p$value2 = factor(ifelse(p$value < p.value, "0", "1"))
 
   ggplot(data = p, aes(x = Var1, y = Var2, fill = value2)) +
-    geom_tile(size = 0.5, color = !is.na(p$value2)) +
+    geom_tile(linewidth = 0.5, color = !is.na(p$value2)) +
     scale_fill_manual(name = "p-value",
       values = c("0" = 'red', "1" = "white"),
       breaks = c("0", "1"),
