@@ -90,12 +90,12 @@ for(row_id in 1:n_benchmarks) {
   lrn_id  = bench_grid[row_id]$lrn_id
 
   task = tasks[[task_id]]
-  learner = lrn_tbl[id == lrn_id]$learner[[1L]]
+  learner = lrn_tbl[id == lrn_id]$learner[[1L]]$clone(deep = TRUE)
   search_space = lrn_tbl[id == lrn_id]$param_set[[1L]]
 
-  # CoxBoost: don't penalize clinical features in case they are included
-  # Note: clinical variables should be first in a multimodal dataset
-  if (grepl(pattern = '^Clinical', task_id) && (lrn_id == 'coxboost')) {
+  #' CoxBoost: don't penalize clinical features in case they are included
+  #' in a task combo (clinical variables should be the first task in a combo)
+  if (grepl(pattern = '^Clinical-', task_id) && (lrn_id == 'coxboost')) {
     learner$param_set$values$unpen.index = 1:length(tasks$Clinical$feature_names)
   }
 
