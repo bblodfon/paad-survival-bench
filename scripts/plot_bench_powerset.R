@@ -10,7 +10,8 @@ res_path = 'results/powerset_bench/'
 #' using `max_nfeats` = 13 in `prepare_tasks_after_fs.R`
 res_file = paste0(res_path, 'bench_res_22112022_234158.rds')
 #' using `max_nfeats` = 26 in `prepare_tasks_after_fs.R`
-# res_file = paste0(res_path, 'bench_something')
+#' too large file to upload in GitHub
+# res_file = paste0(res_path, 'bench_res_more_features_26112022_173300.rds')
 res = readRDS(file = res_file)
 config = res$config
 bm_res = res$bench_res
@@ -115,12 +116,16 @@ coxph_res = coxph_res %>%
 #' and merge them
 all_boot_res = dplyr::bind_rows(all_boot_res, coxph_res)
 
-# aggregate by taking only the median scores
+#' aggregate by taking only the median scores
 aggr_res = all_boot_res %>%
   select(task_id, lrn_id, HarrellC_median, UnoC_median) %>%
   distinct() %>%
   rename(learner_id = lrn_id) %>%
   mutate(task_id = factor(task_id), learner_id = factor(learner_id))
+
+#' check performance
+aggr_res %>% arrange(desc(HarrellC_median))
+aggr_res %>% arrange(desc(UnoC_median))
 
 ba = BenchmarkAggr$new(aggr_res)
 
@@ -137,12 +142,12 @@ for (measure in ba$measures) {
     labs(title = 'Aggregated Performance across tasks',
       y = paste0(nice_msr_label(measure), ' (median)')) +
     theme(axis.text.x = element_text(angle = 35, hjust = 1))
-  ggsave(filename = paste0(img_path, '/aggr_perf_', measure, '_.png'),
+  ggsave(filename = paste0(img_path, '/aggr_perf_', measure, '.png'),
     width = 7, height = 5, dpi = 300)
 }
 
 ## Nemenyi and Critical Difference plots ----
-meas = 'HarrellC_median' # only Harrell's C-index for hte rest of the analysis
+meas = 'HarrellC_median' # only Harrell's C-index for the rest of the analysis
 rmat = get_ranks(ba, measure = meas, minimize = FALSE)
 sort(rowMeans(rmat)) # from best to worst
 
@@ -150,11 +155,11 @@ cd = get_cd(ba, rmat, measure = meas)
 cd$test # post-hoc Friedman-Nemenyi pairwise tests
 
 fn_plot = plot_fn(cd)
-ggsave(plot = fn_plot, filename = paste0(img_path, '/fn_', meas, '_.png'),
+ggsave(plot = fn_plot, filename = paste0(img_path, '/fn_', meas, '.png'),
   width = 5, height = 5, dpi = 300)
 
 cd_plot = plot_cd(cd)
-ggsave(plot = cd_plot, filename = paste0(img_path, '/cd_', meas, '_.png'),
+ggsave(plot = cd_plot, filename = paste0(img_path, '/cd_', meas, '.png'),
   width = 7, height = 5, dpi = 300)
 
 # Clinical + CoxPH vs best learner (and task)
@@ -218,8 +223,9 @@ tbl %>%
   geom_boxplot(show.legend = FALSE) +
   ggpubr::stat_pvalue_manual(stat_test, label = "p = {p} ({p.signif})") +
   labs(x = 'Learner+Task combo', y = 'Harrell\'s C-index') +
-  theme_bw(base_size = 14)
-ggsave(filename = paste0(img_path, '/best_learner_vs_coxph_', measure, '.png'),
+  theme_bw(base_size = 14) #+
+  #theme(axis.text.x = element_text(angle = 15, hjust = 1))
+ggsave(filename = paste0(img_path, '/best_learner_vs_coxph_', meas, '.png'),
   width = 5, height = 5, dpi = 300)
 
 # Correlation between Harrell's and Uno's C-index results per learner ----
@@ -239,6 +245,8 @@ cor_list = lapply(l, function(tbl) {
 })
 
 cor_tbl = dplyr::bind_rows(cor_list)
+cor_tbl = cor_tbl %>% # add mean_rank
+  mutate(mean_rank = cd$data[levels(cor_tbl$learner_id),]$mean_rank)
 cor_tbl %>% arrange(kend_cor)
 
 # Task ranking ----
