@@ -12,4 +12,5 @@ The most important scripts/investigations are the following:
     - **CoxPH** baseline performance using clinical features and several resampling strategies - [script](https://github.com/bblodfon/paad-survival-bench/blob/main/scripts/coxph_bench.R)
     - **CoxBoost** (mRNA only and mRNA + clinical) vs CoxPH (clinical) - [script](https://github.com/bblodfon/paad-survival-bench/blob/main/scripts/coxboost_bench.R)
     - **Glmboost** survival learner performance on mRNA dataset - [script](https://github.com/bblodfon/paad-survival-bench/blob/main/scripts/glmboost_bench.R)
-
+    - Wrapper-based **Ensemble Feature Selection (eFS)** per data modality - see [script](https://github.com/bblodfon/paad-survival-bench/blob/main/scripts/fs_mRNA.R) for mRNA data
+    - **Task powerset benchmark** after eFS is applied (using simple [CoxPH](https://github.com/bblodfon/paad-survival-bench/blob/main/scripts/coxph_powerset.R) or multiple [learners](https://github.com/bblodfon/paad-survival-bench/blob/main/scripts/bench_powerset.R))
