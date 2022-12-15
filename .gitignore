@@ -10,3 +10,4 @@ results/bayes_vs_randsearch/
 results/xgboost/xgboost*
 scripts/test_fs.R
 scripts/helpers_test.R
+results/powerset_bench/bench_res_more_features_26112022_173300.rds
