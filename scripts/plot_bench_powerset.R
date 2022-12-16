@@ -148,7 +148,7 @@ for (measure in ba$measures) {
 
 ## Nemenyi and Critical Difference plots ----
 meas = 'HarrellC_median' # only Harrell's C-index for the rest of the analysis
-rmat = get_ranks(ba, measure = meas, minimize = FALSE)
+rmat = get_ranks(ba, measure = meas, minimize = FALSE)$rmat_lrn
 sort(rowMeans(rmat)) # from best to worst
 
 cd = get_cd(ba, rmat, measure = meas)

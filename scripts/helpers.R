@@ -768,12 +768,18 @@ nice_lrn_label = function(label) {
 }
 
 #' @param ba BenchmarkAggr object whose `ba$data` data.table has columns `task_id`,
-#' `learner_id` as well columns having the aggregated score for each combination
+#' `learner_id` as well columns specifying an aggregated score for each combination
 #' of task and learner
-#' @param measure name of measure column of `ba$data` which will be used to
-#' calculate the ranks
+#' @param measure name of `ba$data` column representing a performance score
+#' @param minimize is a lower value for `measure` better? (Default: FALSE, e.g.
+#' C-index )
 #'
-#' @return a matrix of ranks (learners x tasks - rows x columns)
+#' @return 3 matrices
+#' - A matrix of aggregated scores (learners-rows x tasks-columns), i.e. a
+#' reformatting of `ba$data`
+#' - Two rank matrices based on the given `measure` and `minimize` value that
+#' have the learner ranks across each task and the task ranks across each
+#' learner respectively
 get_ranks = function(ba, measure = NULL, minimize = FALSE) {
   if (is.null(measure) || (!measure %in% ba$measures)) {
     stop('You have to specify a measure (column name) of `ba$data` to use
@@ -781,36 +787,32 @@ get_ranks = function(ba, measure = NULL, minimize = FALSE) {
   }
   aggr_res = ba$data %>% as_tibble()
 
-  learners = ba$learners
-  tasks = ba$tasks
-  nlrns = ba$nlrns
-  ntasks = ba$ntasks
+  tbl = aggr_res %>%
+    select(learner_id, task_id, !!measure) %>%
+    tidyr::pivot_wider(names_from = task_id, values_from = !!measure)
 
-  rmat = matrix(data = 0, nrow = nlrns, ncol = ntasks)
-  rownames(rmat) = learners
-  colnames(rmat) = tasks
+  mat = tbl %>% select(-learner_id) %>% as.matrix()
+  rownames(mat) = tbl$learner_id
+  mat # matrix (learners x tasks) with aggregated scores
 
-  for (task in colnames(rmat)) {
-    scores = aggr_res %>%
-      filter(task_id == task) %>%
-      select(learner_id, !!measure) %>%
-      arrange(factor(learner_id, levels = learners)) %>%
-      pull(!!measure)
-
-    if (minimize) {
-      ranks = rank(scores)
-    } else {
-      ranks = rank(-scores)
-    }
-
-    rmat[,task] = ranks
+  # "reverse" direction for the calculation of ranks if needed
+  if (minimize == FALSE) {
+    mmat = -mat
+  } else { # lower score is better, lower ranking is better as well
+    mmat = mat
   }
 
-  rmat
+  # learner ranks for each task
+  rmat_lrn = apply(mmat, 2, rank)
+
+  # task ranks for each learner
+  rmat_tsk = t(apply(mmat, 1, rank))
+
+  return(list(mat = mat, rmat_lrn = rmat_lrn, rmat_tsk = rmat_tsk))
 }
 
 #' @param ba BenchmarkAggr object
-#' @param rmat Rank matrix (see `get_ranks`)
+#' @param rmat Learner Rank matrix (see `get_ranks`)
 #' @param measure one of ba$measures
 #' @param p.value Default 0.05 (for the nemenyi test)
 #'
