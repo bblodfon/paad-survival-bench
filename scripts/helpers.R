@@ -785,6 +785,7 @@ get_ranks = function(ba, measure = NULL, minimize = FALSE) {
     stop('You have to specify a measure (column name) of `ba$data` to use
       for the calculation of the ranks')
   }
+
   aggr_res = ba$data %>% as_tibble()
 
   tbl = aggr_res %>%
@@ -803,7 +804,13 @@ get_ranks = function(ba, measure = NULL, minimize = FALSE) {
   }
 
   # learner ranks for each task
-  rmat_lrn = apply(mmat, 2, rank)
+  if (ba$nlrns == 1) {
+    rmat_lrn = matrix(data = 1, nrow = 1, ncol = ncol(mmat))
+    rownames(rmat_lrn) = rownames(mmat)
+    colnames(rmat_lrn) = colnames(mmat)
+  } else {
+    rmat_lrn = apply(mmat, 2, rank)
+  }
 
   # task ranks for each learner
   rmat_tsk = t(apply(mmat, 1, rank))
