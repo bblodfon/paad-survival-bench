@@ -3,6 +3,8 @@ library(mlr3verse)
 library(mlr3benchmark)
 library(tidyverse)
 source('scripts/helpers.R')
+suppressPackageStartupMessages(library(ComplexHeatmap))
+suppressPackageStartupMessages(library(circlize))
 
 # Load and tidy data ----
 #' Get results file
@@ -148,10 +150,11 @@ for (measure in ba$measures) {
 
 ## Nemenyi and Critical Difference plots ----
 meas = 'HarrellC_median' # only Harrell's C-index for the rest of the analysis
-rmat = get_ranks(ba, measure = meas, minimize = FALSE)$rmat_lrn
-sort(rowMeans(rmat)) # from best to worst
+ranks = get_ranks(ba, measure = meas, minimize = FALSE)
+rmat_lrn = ranks$rmat_lrn
+sort(rowMeans(rmat_lrn)) # from best to worst
 
-cd = get_cd(ba, rmat, measure = meas)
+cd = get_cd(ba, rmat_lrn, measure = meas)
 cd$test # post-hoc Friedman-Nemenyi pairwise tests
 
 fn_plot = plot_fn(cd)
@@ -163,7 +166,7 @@ ggsave(plot = cd_plot, filename = paste0(img_path, '/cd_', meas, '.png'),
   width = 7, height = 5, dpi = 300)
 
 # Clinical + CoxPH vs best learner (and task)
-best_lrn = names(sort(rowMeans(rmat)))[1]
+best_lrn = names(sort(rowMeans(rmat_lrn)))[1]
 best_lrn
 
 #' get best and worst performing task for best learner
@@ -250,3 +253,47 @@ cor_tbl = cor_tbl %>% # add mean_rank
 cor_tbl %>% arrange(kend_cor)
 
 # Task ranking ----
+res = task_ranking(ranks)
+#' normalized rank sum score and ks statistic correlate
+cor(c(res$nrs_mat), c(res$ks_mat))
+cor(c(res$nrs_pval), c(res$ks_pval))
+
+# define colors for C-index
+col_fun = colorRamp2(c(0, 0.5, 1), c("red", "white", "green"))
+png(filename = paste0(img_path, '/task_ranking_rs.png'), width = 7, height = 5,
+  units = 'in', res = 450)
+Heatmap(matrix = res$nrs_mat, name = 'RS score',
+  row_title = 'Learners', column_title = 'Single omics', col = col_fun,
+  cell_fun = function(j, i, x, y, width, height, fill) {
+    pval = res$nrs_pval[i, j]
+    if(pval < 0.0001) {
+      grid.text('****', x, y)
+    } else if(pval < 0.001) {
+      grid.text('***', x, y)
+    } else if(pval < 0.01) {
+      grid.text('**', x, y)
+    } else if(pval < 0.05) {
+      grid.text('*', x, y)
+    }
+  }
+)
+dev.off()
+
+png(filename = paste0(img_path, '/task_ranking_ks.png'), width = 7, height = 5,
+  units = 'in', res = 450)
+Heatmap(matrix = res$ks_mat, name = 'KS score',
+  row_title = 'Learners', column_title = 'Single omics', col = col_fun,
+  cell_fun = function(j, i, x, y, width, height, fill) {
+    pval = res$ks_pval[i, j]
+    if(pval < 0.0001) {
+      grid.text('****', x, y)
+    } else if(pval < 0.001) {
+      grid.text('***', x, y)
+    } else if(pval < 0.01) {
+      grid.text('**', x, y)
+    } else if(pval < 0.05) {
+      grid.text('*', x, y)
+    }
+  }
+)
+dev.off()
