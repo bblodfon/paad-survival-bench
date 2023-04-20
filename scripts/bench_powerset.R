@@ -99,11 +99,6 @@ for(row_id in 1:n_benchmarks) {
     learner$param_set$values$unpen.index = 1:length(tasks$Clinical$feature_names)
   }
 
-  # TODO
-  #' Set `early_stopping_set = test/train?` for `xgboost_{cox/aft}_reg` learner
-  #' when `mlr3extralearners` is updated
-  #' distr prediction is needed pending on train measure or more general?
-
   tic()
   res = run_at(learner, task, train_indx, test_indx, resampling, measure,
     config$nevals, search_space, all_hpcs_perf = TRUE, boot_test = TRUE,
