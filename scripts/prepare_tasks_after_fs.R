@@ -56,8 +56,8 @@ data_stats1 = lapply(fs_consensus_res, function(l) {
 row_sums = data_stats1 %>%
   select(-data_type) %>%
   colSums() %>%
-  as_tibble_row() %>%
-  add_column(data_type = 'all', .before = 1)
+  tibble::as_tibble_row() %>%
+  tibble::add_column(data_type = 'all', .before = 1)
 
 data_stats1 = dplyr::bind_rows(data_stats1, row_sums)
 data_stats1 # could choose cutoff for example - no golden rule exists here!
