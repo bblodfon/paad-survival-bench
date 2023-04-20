@@ -33,7 +33,7 @@ clinical_var_tbl = clinical_var_mat %>%
     pathologic_stage == 'stage iia' ~ 2,
     pathologic_stage == 'stage iib' ~ 3,
     pathologic_stage == 'stage iii' ~ 4,
-    pathologic_stage == 'stage ib' ~ 5,
+    pathologic_stage == 'stage ib' ~ 5, # OP, this should have been #2!!!
     pathologic_stage == 'stage iv' ~ 6
   )))
 
