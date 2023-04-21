@@ -1,5 +1,7 @@
 # Preprocessing of mRNA, miRNA, CNA and Methylation data
 # Make sure you have enough free memory when running this script!
+# curatedTCGAData toturial online (BEST):
+# https://rstudio-pubs-static.s3.amazonaws.com/464792_7a3d1ce97c3f4abcb52b226865c01612.html
 library(curatedTCGAData)
 library(TCGAutils)
 library(dplyr)
@@ -90,6 +92,7 @@ cancer_data_simplified = TCGAutils::simplifyTCGA(cancer_data)
 
 # https://docs.gdc.cancer.gov/Data/Bioinformatics_Pipelines/CNV_Pipeline/#copy-number-variation-analysis-pipeline
 # The GDC further transforms these copy number values into segment mean values, which are equal to log2(copy-number/2)
+# the divide by 2 is because of diploid
 # Diploid regions will have a segment mean of zero, amplified regions will have positive values, and deletions will have negative values.
 cna_snp_mat = t(assay(cancer_data_simplified[,,"PAAD_CNASNP-20160128_simplified"]))
 rownames(cna_snp_mat) = cancer_data$patientID
